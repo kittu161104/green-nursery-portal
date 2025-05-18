@@ -5,33 +5,33 @@
 
 @layer base {
   :root {
-    --background: 150 30% 6%;
-    --foreground: 120 10% 98%;
+    --background: 150 30% 2%;
+    --foreground: 142 70% 50%;
 
-    --card: 150 30% 9%;
-    --card-foreground: 120 10% 98%;
+    --card: 150 30% 5%;
+    --card-foreground: 142 70% 50%;
 
-    --popover: 150 30% 9%;
-    --popover-foreground: 120 10% 98%;
+    --popover: 150 30% 5%;
+    --popover-foreground: 142 70% 50%;
 
     --primary: 142 72% 29%;
-    --primary-foreground: 120 10% 98%;
+    --primary-foreground: 142 70% 50%;
 
-    --secondary: 150 30% 15%;
-    --secondary-foreground: 120 10% 98%;
+    --secondary: 150 30% 10%;
+    --secondary-foreground: 142 70% 50%;
 
-    --muted: 150 30% 15%;
-    --muted-foreground: 120 5% 70%;
+    --muted: 150 30% 10%;
+    --muted-foreground: 150 10% 40%;
 
-    --accent: 142 30% 20%;
-    --accent-foreground: 120 10% 98%;
+    --accent: 142 30% 15%;
+    --accent-foreground: 142 70% 50%;
 
-    --destructive: 0 84% 60%;
-    --destructive-foreground: 120 10% 98%;
+    --destructive: 0 84% 40%;
+    --destructive-foreground: 142 70% 50%;
 
-    --border: 150 30% 20%;
-    --input: 150 30% 20%;
-    --ring: 142 72% 29%;
+    --border: 150 30% 15%;
+    --input: 150 30% 15%;
+    --ring: 142 72% 25%;
 
     --radius: 0.5rem;
   }
@@ -43,22 +43,22 @@
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-black text-foreground;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-serif;
+    @apply font-serif text-green-300;
   }
 }
 
 @layer utilities {
   .glass-effect {
-    @apply backdrop-blur-md bg-black/40 border border-white/10;
+    @apply backdrop-blur-md bg-black/60 border border-green-900/30;
   }
   
   .glass-card {
-    @apply backdrop-blur-md bg-black/20 border border-green-900/40;
+    @apply backdrop-blur-md bg-black/40 border border-green-900/40;
   }
 }
 

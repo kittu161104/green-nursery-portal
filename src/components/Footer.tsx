@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 
 interface ContactInfo {
+  id?: string;
   address_line1: string;
   address_line2: string;
   phone: string;
@@ -23,7 +24,7 @@ const Footer = () => {
 
     // Set up real-time listener for contact info changes
     const channel = supabase
-      .channel('public:contact_info')
+      .channel('contact-changes')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'contact_info' },
@@ -41,18 +42,19 @@ const Footer = () => {
   }, []);
 
   const fetchContactInfo = async () => {
+    // Use maybeSingle() instead of single() to prevent error if no data
     const { data, error } = await supabase
       .from('contact_info')
       .select('*')
-      .single();
+      .maybeSingle();
     
     if (data && !error) {
-      setContactInfo(data);
+      setContactInfo(data as ContactInfo);
     }
   };
 
   return (
-    <footer className="bg-black text-white py-12 relative overflow-hidden">
+    <footer className="bg-black text-green-300 py-12 relative overflow-hidden">
       <div className="absolute inset-0 z-0">
         <div className="absolute inset-0 bg-green-950/50"></div>
         <div className="absolute inset-0 backdrop-blur-sm"></div>
@@ -60,12 +62,12 @@ const Footer = () => {
       <div className="container px-4 mx-auto relative z-10">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-4">
-            <h3 className="text-xl font-bold">Natural Green Nursery</h3>
-            <p className="text-green-300">
+            <h3 className="text-xl font-bold text-green-300">Natural Green Nursery</h3>
+            <p className="text-green-400">
               Bringing nature into your home with our carefully selected plants.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-green-300 hover:text-white">
+              <a href="#" className="text-green-400 hover:text-green-300">
                 <span className="sr-only">Facebook</span>
                 <svg
                   className="h-6 w-6"
@@ -80,7 +82,7 @@ const Footer = () => {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-green-300 hover:text-white">
+              <a href="#" className="text-green-400 hover:text-green-300">
                 <span className="sr-only">Instagram</span>
                 <svg
                   className="h-6 w-6"
@@ -95,7 +97,7 @@ const Footer = () => {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-green-300 hover:text-white">
+              <a href="#" className="text-green-400 hover:text-green-300">
                 <span className="sr-only">Twitter</span>
                 <svg
                   className="h-6 w-6"
@@ -110,39 +112,39 @@ const Footer = () => {
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4">Shop</h3>
+            <h3 className="text-lg font-semibold mb-4 text-green-300">Shop</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/shop" className="text-green-300 hover:text-white">All Plants</Link>
+                <Link to="/shop" className="text-green-400 hover:text-green-300">All Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=indoor" className="text-green-300 hover:text-white">Indoor Plants</Link>
+                <Link to="/shop?category=indoor" className="text-green-400 hover:text-green-300">Indoor Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=outdoor" className="text-green-300 hover:text-white">Outdoor Plants</Link>
+                <Link to="/shop?category=outdoor" className="text-green-400 hover:text-green-300">Outdoor Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=succulents" className="text-green-300 hover:text-white">Succulents</Link>
+                <Link to="/shop?category=succulents" className="text-green-400 hover:text-green-300">Succulents</Link>
               </li>
             </ul>
           </div>
           
           <div>
             <div className="mb-6">
-              <h3 className="text-lg font-semibold mb-4">Company</h3>
+              <h3 className="text-lg font-semibold mb-4 text-green-300">Company</h3>
               <ul className="space-y-2">
                 <li>
-                  <Link to="/about" className="text-green-300 hover:text-white">About Us</Link>
+                  <Link to="/about" className="text-green-400 hover:text-green-300">About Us</Link>
                 </li>
                 <li>
-                  <Link to="/contact" className="text-green-300 hover:text-white">Contact</Link>
+                  <Link to="/contact" className="text-green-400 hover:text-green-300">Contact</Link>
                 </li>
               </ul>
             </div>
             
             <div>
-              <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-              <address className="not-italic text-green-300 space-y-2">
+              <h3 className="text-lg font-semibold mb-4 text-green-300">Contact Us</h3>
+              <address className="not-italic text-green-400 space-y-2">
                 <p>{contactInfo.address_line1}</p>
                 <p>{contactInfo.address_line2}</p>
                 <p>Phone: {contactInfo.phone}</p>
@@ -152,7 +154,7 @@ const Footer = () => {
           </div>
         </div>
         
-        <div className="border-t border-green-900 mt-8 pt-8 text-center text-green-300">
+        <div className="border-t border-green-900 mt-8 pt-8 text-center text-green-400">
           <p>&copy; {new Date().getFullYear()} Natural Green Nursery. All rights reserved.</p>
         </div>
       </div>
