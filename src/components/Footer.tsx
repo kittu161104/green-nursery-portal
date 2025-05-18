@@ -1,18 +1,71 @@
 
 import { Link } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { supabase } from "@/integrations/supabase/client";
+
+interface ContactInfo {
+  address_line1: string;
+  address_line2: string;
+  phone: string;
+  email: string;
+}
 
 const Footer = () => {
+  const [contactInfo, setContactInfo] = useState<ContactInfo>({
+    address_line1: "123 Green Street",
+    address_line2: "Plantville, CA 94123",
+    phone: "(555) 123-4567",
+    email: "info@naturalgreenursery.com"
+  });
+
+  useEffect(() => {
+    fetchContactInfo();
+
+    // Set up real-time listener for contact info changes
+    const channel = supabase
+      .channel('public:contact_info')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'contact_info' },
+        (payload) => {
+          if (payload.new) {
+            setContactInfo(payload.new as ContactInfo);
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
+
+  const fetchContactInfo = async () => {
+    const { data, error } = await supabase
+      .from('contact_info')
+      .select('*')
+      .single();
+    
+    if (data && !error) {
+      setContactInfo(data);
+    }
+  };
+
   return (
-    <footer className="bg-green-950 text-white py-12">
-      <div className="container px-4 mx-auto">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="bg-black text-white py-12 relative overflow-hidden">
+      <div className="absolute inset-0 z-0">
+        <div className="absolute inset-0 bg-green-950/50"></div>
+        <div className="absolute inset-0 backdrop-blur-sm"></div>
+      </div>
+      <div className="container px-4 mx-auto relative z-10">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="space-y-4">
             <h3 className="text-xl font-bold">Natural Green Nursery</h3>
-            <p className="text-green-200">
+            <p className="text-green-300">
               Bringing nature into your home with our carefully selected plants.
             </p>
             <div className="flex space-x-4">
-              <a href="#" className="text-green-200 hover:text-white">
+              <a href="#" className="text-green-300 hover:text-white">
                 <span className="sr-only">Facebook</span>
                 <svg
                   className="h-6 w-6"
@@ -27,7 +80,7 @@ const Footer = () => {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-green-200 hover:text-white">
+              <a href="#" className="text-green-300 hover:text-white">
                 <span className="sr-only">Instagram</span>
                 <svg
                   className="h-6 w-6"
@@ -42,7 +95,7 @@ const Footer = () => {
                   />
                 </svg>
               </a>
-              <a href="#" className="text-green-200 hover:text-white">
+              <a href="#" className="text-green-300 hover:text-white">
                 <span className="sr-only">Twitter</span>
                 <svg
                   className="h-6 w-6"
@@ -60,56 +113,46 @@ const Footer = () => {
             <h3 className="text-lg font-semibold mb-4">Shop</h3>
             <ul className="space-y-2">
               <li>
-                <Link to="/shop" className="text-green-200 hover:text-white">All Plants</Link>
+                <Link to="/shop" className="text-green-300 hover:text-white">All Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=indoor" className="text-green-200 hover:text-white">Indoor Plants</Link>
+                <Link to="/shop?category=indoor" className="text-green-300 hover:text-white">Indoor Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=outdoor" className="text-green-200 hover:text-white">Outdoor Plants</Link>
+                <Link to="/shop?category=outdoor" className="text-green-300 hover:text-white">Outdoor Plants</Link>
               </li>
               <li>
-                <Link to="/shop?category=succulents" className="text-green-200 hover:text-white">Succulents</Link>
-              </li>
-              <li>
-                <Link to="/shop?category=pet-friendly" className="text-green-200 hover:text-white">Pet-Friendly Plants</Link>
+                <Link to="/shop?category=succulents" className="text-green-300 hover:text-white">Succulents</Link>
               </li>
             </ul>
           </div>
           
           <div>
-            <h3 className="text-lg font-semibold mb-4">Company</h3>
-            <ul className="space-y-2">
-              <li>
-                <Link to="/about" className="text-green-200 hover:text-white">About Us</Link>
-              </li>
-              <li>
-                <Link to="/contact" className="text-green-200 hover:text-white">Contact</Link>
-              </li>
-              <li>
-                <Link to="/faq" className="text-green-200 hover:text-white">FAQs</Link>
-              </li>
-              <li>
-                <Link to="/careers" className="text-green-200 hover:text-white">Careers</Link>
-              </li>
-              <li>
-                <Link to="/privacy-policy" className="text-green-200 hover:text-white">Privacy Policy</Link>
-              </li>
-            </ul>
-          </div>
-          
-          <div>
-            <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
-            <address className="not-italic text-green-200 space-y-2">
-              <p>123 Green Street</p>
-              <p>Plantville, CA 94123</p>
-              <p>Phone: (555) 123-4567</p>
-              <p>Email: info@naturalgreenursery.com</p>
-            </address>
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-4">Company</h3>
+              <ul className="space-y-2">
+                <li>
+                  <Link to="/about" className="text-green-300 hover:text-white">About Us</Link>
+                </li>
+                <li>
+                  <Link to="/contact" className="text-green-300 hover:text-white">Contact</Link>
+                </li>
+              </ul>
+            </div>
+            
+            <div>
+              <h3 className="text-lg font-semibold mb-4">Contact Us</h3>
+              <address className="not-italic text-green-300 space-y-2">
+                <p>{contactInfo.address_line1}</p>
+                <p>{contactInfo.address_line2}</p>
+                <p>Phone: {contactInfo.phone}</p>
+                <p>Email: {contactInfo.email}</p>
+              </address>
+            </div>
           </div>
         </div>
         
-        <div className="border-t border-green-800 mt-8 pt-8 text-center text-green-200">
+        <div className="border-t border-green-900 mt-8 pt-8 text-center text-green-300">
           <p>&copy; {new Date().getFullYear()} Natural Green Nursery. All rights reserved.</p>
         </div>
       </div>
