@@ -10,6 +10,9 @@ import { CartProvider } from "./context/CartContext";
 // Pages
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";
+import About from "./pages/About";
+import Contact from "./pages/Contact";
+import PlantCareGuides from "./pages/PlantCareGuides";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import SignIn from "./pages/SignIn";
@@ -17,6 +20,8 @@ import SignUp from "./pages/SignUp";
 import Account from "./pages/Account";
 import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
+import AboutAdmin from "./pages/admin/AboutAdmin";
+import ContactAdmin from "./pages/admin/ContactAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -33,6 +38,9 @@ const App = () => (
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/shop" element={<Shop />} />
+              <Route path="/about" element={<About />} />
+              <Route path="/contact" element={<Contact />} />
+              <Route path="/plant-care-guides" element={<PlantCareGuides />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/signin" element={<SignIn />} />
@@ -44,6 +52,8 @@ const App = () => (
               {/* Admin Routes */}
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/products" element={<ProductsAdmin />} />
+              <Route path="/admin/about" element={<AboutAdmin />} />
+              <Route path="/admin/contact" element={<ContactAdmin />} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

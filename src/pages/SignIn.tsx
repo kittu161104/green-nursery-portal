@@ -36,20 +36,29 @@ const SignIn = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col">
+    <div className="min-h-screen flex flex-col bg-black">
       <Navbar />
-      <main className="flex-grow flex items-center justify-center py-12">
-        <div className="mx-auto w-full max-w-md">
-          <div className="bg-white px-8 py-10 shadow rounded-lg">
+      <main className="flex-grow flex items-center justify-center py-12 relative overflow-hidden">
+        <div className="absolute inset-0 z-0">
+          <img
+            src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?ixlib=rb-1.2.1&auto=format&fit=crop&w=2000&q=80"
+            alt="Background plants"
+            className="w-full h-full object-cover opacity-10"
+          />
+          <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-green-950/20 to-black/90 backdrop-blur-sm"></div>
+        </div>
+        
+        <div className="mx-auto w-full max-w-md relative z-10">
+          <div className="glass-effect px-8 py-10 shadow-lg rounded-lg border border-green-800/30 backdrop-blur-lg transition-all duration-300 hover:shadow-green-900/20 hover:border-green-700/40">
             <div className="sm:mx-auto sm:w-full sm:max-w-md">
-              <h2 className="text-center text-3xl font-bold tracking-tight text-gray-900">
+              <h2 className="text-center text-3xl font-bold tracking-tight text-green-300">
                 Sign in to your account
               </h2>
-              <p className="mt-2 text-center text-sm text-gray-600">
+              <p className="mt-2 text-center text-sm text-green-500">
                 Or{" "}
                 <Link
                   to="/signup"
-                  className="font-medium text-green-600 hover:text-green-500"
+                  className="font-medium text-green-400 hover:text-green-300 transition-colors"
                 >
                   create a new account
                 </Link>
@@ -58,7 +67,7 @@ const SignIn = () => {
 
             <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
               <div>
-                <Label htmlFor="email">Email address</Label>
+                <Label htmlFor="email" className="text-green-300">Email address</Label>
                 <Input
                   id="email"
                   name="email"
@@ -67,17 +76,17 @@ const SignIn = () => {
                   onChange={(e) => setEmail(e.target.value)}
                   autoComplete="email"
                   required
-                  className="mt-1"
+                  className="mt-1 bg-black/40 border-green-900/50 text-green-300 focus:border-green-500 focus:ring-green-500"
                 />
               </div>
 
               <div>
                 <div className="flex items-center justify-between">
-                  <Label htmlFor="password">Password</Label>
+                  <Label htmlFor="password" className="text-green-300">Password</Label>
                   <div className="text-sm">
                     <Link
                       to="/forgot-password"
-                      className="font-medium text-green-600 hover:text-green-500"
+                      className="font-medium text-green-400 hover:text-green-300 transition-colors"
                     >
                       Forgot your password?
                     </Link>
@@ -91,19 +100,19 @@ const SignIn = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   autoComplete="current-password"
                   required
-                  className="mt-1"
+                  className="mt-1 bg-black/40 border-green-900/50 text-green-300 focus:border-green-500 focus:ring-green-500"
                 />
               </div>
 
               <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="w-full bg-green-800 hover:bg-green-700 text-green-300 border border-green-700 transition-all duration-300 transform hover:scale-[1.02]"
                 disabled={isLoading}
               >
                 {isLoading ? "Signing in..." : "Sign in"}
               </Button>
               
-              <div className="text-sm text-center text-gray-500">
+              <div className="text-sm text-center text-green-500">
                 <p>
                   For demo: use customer@gmail.com for customer access<br />
                   or admin@nature.com for admin access<br />

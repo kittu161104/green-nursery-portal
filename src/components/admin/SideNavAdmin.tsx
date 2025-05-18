@@ -8,6 +8,8 @@ import {
   Settings,
   FileText,
   Home,
+  Info,
+  Phone
 } from "lucide-react";
 
 const SideNavAdmin = () => {
@@ -29,6 +31,16 @@ const SideNavAdmin = () => {
       icon: <Package className="h-5 w-5" />,
     },
     {
+      label: "About",
+      href: "/admin/about",
+      icon: <Info className="h-5 w-5" />,
+    },
+    {
+      label: "Contact",
+      href: "/admin/contact",
+      icon: <Phone className="h-5 w-5" />,
+    },
+    {
       label: "Orders",
       href: "/admin/orders",
       icon: <FileText className="h-5 w-5" />,
@@ -46,11 +58,11 @@ const SideNavAdmin = () => {
   ];
 
   return (
-    <div className="hidden border-r bg-muted/40 md:block w-64 p-6">
+    <div className="hidden border-r border-green-900/30 bg-green-900/10 md:block w-64 p-6">
       <div className="flex flex-col space-y-6">
-        <div className="flex h-12 items-center border-b pb-6">
+        <div className="flex h-12 items-center border-b border-green-900/30 pb-6">
           <Link to="/" className="flex items-center gap-2 font-semibold">
-            <span className="text-xl font-bold text-green-700">NGN Admin</span>
+            <span className="text-xl font-bold text-green-400">NGN Admin</span>
           </Link>
         </div>
         
@@ -60,8 +72,8 @@ const SideNavAdmin = () => {
               <Button
                 variant="ghost"
                 className={cn(
-                  "w-full justify-start gap-2",
-                  isActiveRoute(item.href) && "bg-muted font-medium"
+                  "w-full justify-start gap-2 text-green-400",
+                  isActiveRoute(item.href) && "bg-green-900/30 text-green-300 font-medium"
                 )}
               >
                 {item.icon}

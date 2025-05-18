@@ -102,7 +102,7 @@ const ContactInfoEditor = () => {
       <CardHeader>
         <CardTitle className="text-xl font-bold text-green-300">Contact Information</CardTitle>
         <CardDescription className="text-green-500">
-          Edit the contact information that appears in the website footer
+          Edit the contact information that appears in the website footer and contact page
         </CardDescription>
       </CardHeader>
       <CardContent>
