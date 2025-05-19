@@ -79,7 +79,7 @@ const Index = () => {
                 </div>
                 
                 <div className="mt-8">
-                  <Link to="/care-guides">
+                  <Link to="/plant-care-guides">
                     <Button className="bg-green-700 hover:bg-green-800 text-white">
                       View Care Guides
                     </Button>

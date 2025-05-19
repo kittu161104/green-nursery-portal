@@ -8,6 +8,8 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { toast } from '@/components/ui/sonner';
+import { IndianRupee } from 'lucide-react';
+import FileUpload from './FileUpload';
 
 interface ProductFormProps {
   product?: Product;
@@ -52,6 +54,13 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
     });
   };
 
+  const handleImageUpload = (url: string) => {
+    setFormData({
+      ...formData,
+      imageUrl: url,
+    });
+  };
+
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     
@@ -67,7 +76,7 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
     }
     
     if (!formData.imageUrl.trim()) {
-      toast.error("Image URL is required");
+      toast.error("Product image is required");
       return;
     }
     
@@ -89,16 +98,22 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
         </div>
         
         <div>
-          <Label htmlFor="price">Price ($)</Label>
-          <Input
-            id="price"
-            name="price"
-            type="number"
-            step="0.01"
-            value={formData.price}
-            onChange={handleChange}
-            required
-          />
+          <Label htmlFor="price">Price (₹)</Label>
+          <div className="relative">
+            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+              <IndianRupee className="h-4 w-4 text-green-600" />
+            </div>
+            <Input
+              id="price"
+              name="price"
+              type="number"
+              step="0.01"
+              value={formData.price}
+              onChange={handleChange}
+              className="pl-10"
+              required
+            />
+          </div>
         </div>
         
         <div>
@@ -114,23 +129,11 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
         </div>
         
         <div>
-          <Label htmlFor="imageUrl">Image URL</Label>
-          <Input
-            id="imageUrl"
-            name="imageUrl"
-            value={formData.imageUrl}
-            onChange={handleChange}
-            required
+          <Label>Product Image</Label>
+          <FileUpload 
+            onUploadComplete={handleImageUpload}
+            currentImage={formData.imageUrl}
           />
-          {formData.imageUrl && (
-            <div className="mt-2 h-32 w-32 overflow-hidden rounded-md">
-              <img
-                src={formData.imageUrl}
-                alt="Product preview"
-                className="h-full w-full object-cover"
-              />
-            </div>
-          )}
         </div>
         
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -147,7 +150,6 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
                 <SelectItem value="indoor">Indoor</SelectItem>
                 <SelectItem value="outdoor">Outdoor</SelectItem>
                 <SelectItem value="succulents">Succulents</SelectItem>
-                <SelectItem value="tropical">Tropical</SelectItem>
               </SelectContent>
             </Select>
           </div>

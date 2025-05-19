@@ -1,10 +1,11 @@
 
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { toast } from "@/components/ui/sonner";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 
 interface ContactInfo {
   id?: string;
@@ -12,172 +13,215 @@ interface ContactInfo {
   address_line2: string;
   phone: string;
   email: string;
+  facebook_url?: string;
+  instagram_url?: string;
+  whatsapp_url?: string;
 }
 
 const ContactInfoEditor = () => {
-  const [loading, setLoading] = useState(false);
   const [contactInfo, setContactInfo] = useState<ContactInfo>({
     address_line1: "",
     address_line2: "",
     phone: "",
     email: "",
+    facebook_url: "",
+    instagram_url: "",
+    whatsapp_url: ""
   });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
   useEffect(() => {
+    const fetchContactInfo = async () => {
+      try {
+        setLoading(true);
+        const { data, error } = await supabase
+          .from('contact_info')
+          .select('*')
+          .maybeSingle();
+
+        if (error) {
+          toast.error("Error fetching contact info");
+          console.error("Error fetching contact info:", error);
+        } else if (data) {
+          setContactInfo(data as ContactInfo);
+        }
+      } catch (error) {
+        console.error("Error:", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     fetchContactInfo();
   }, []);
 
-  const fetchContactInfo = async () => {
-    setLoading(true);
-    try {
-      const { data, error } = await supabase
-        .from('contact_info')
-        .select('*')
-        .maybeSingle();
-
-      if (error) {
-        console.error("Error fetching contact info:", error);
-      } else if (data) {
-        setContactInfo(data as ContactInfo);
-      }
-    } catch (error) {
-      console.error("Error:", error);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-    setContactInfo((prev) => ({ ...prev, [name]: value }));
+    setContactInfo(prev => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
 
     try {
-      let response;
+      setSaving(true);
 
       if (contactInfo.id) {
-        // Update existing record
-        response = await supabase
+        // Update existing contact info
+        const { error } = await supabase
           .from('contact_info')
           .update({
             address_line1: contactInfo.address_line1,
             address_line2: contactInfo.address_line2,
             phone: contactInfo.phone,
             email: contactInfo.email,
+            facebook_url: contactInfo.facebook_url,
+            instagram_url: contactInfo.instagram_url,
+            whatsapp_url: contactInfo.whatsapp_url
           })
-          .eq("id", contactInfo.id);
+          .eq('id', contactInfo.id);
+
+        if (error) {
+          toast.error("Failed to update contact info");
+          console.error("Error updating contact info:", error);
+          return;
+        }
       } else {
-        // Insert new record
-        response = await supabase
+        // Insert new contact info
+        const { error } = await supabase
           .from('contact_info')
-          .insert({
+          .insert([{
             address_line1: contactInfo.address_line1,
             address_line2: contactInfo.address_line2,
             phone: contactInfo.phone,
             email: contactInfo.email,
-          });
+            facebook_url: contactInfo.facebook_url,
+            instagram_url: contactInfo.instagram_url,
+            whatsapp_url: contactInfo.whatsapp_url
+          }]);
+
+        if (error) {
+          toast.error("Failed to save contact info");
+          console.error("Error inserting contact info:", error);
+          return;
+        }
       }
 
-      if (response.error) {
-        toast.error("Failed to save contact information");
-        console.error("Error saving contact info:", response.error);
-      } else {
-        toast.success("Contact information saved successfully");
-        fetchContactInfo(); // Refresh data
-      }
+      toast.success("Contact information saved successfully");
     } catch (error) {
       toast.error("An error occurred");
       console.error("Error:", error);
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
+  if (loading) {
+    return <div className="p-4">Loading contact information...</div>;
+  }
+
   return (
-    <Card className="bg-black/40 shadow-lg border-green-900/50 backdrop-blur-md">
-      <CardHeader>
-        <CardTitle className="text-xl font-bold text-green-300">Contact Information</CardTitle>
-        <CardDescription className="text-green-500">
-          Edit the contact information that appears in the website footer and contact page
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="space-y-2">
-            <label htmlFor="address_line1" className="text-sm font-medium text-green-300">
-              Address Line 1
-            </label>
-            <Input
-              id="address_line1"
-              name="address_line1"
-              value={contactInfo.address_line1}
-              onChange={handleInputChange}
-              placeholder="Street address"
-              className="bg-black/30 border-green-900/50 text-green-300 placeholder:text-green-700"
-              required
-            />
-          </div>
+    <form onSubmit={handleSubmit}>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+        <div>
+          <Label htmlFor="address_line1">Address Line 1</Label>
+          <Input
+            id="address_line1"
+            name="address_line1"
+            value={contactInfo.address_line1}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="address_line2">Address Line 2</Label>
+          <Input
+            id="address_line2"
+            name="address_line2"
+            value={contactInfo.address_line2}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="phone">Phone Number</Label>
+          <Input
+            id="phone"
+            name="phone"
+            value={contactInfo.phone}
+            onChange={handleChange}
+            required
+          />
+        </div>
+        
+        <div>
+          <Label htmlFor="email">Email Address</Label>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            value={contactInfo.email}
+            onChange={handleChange}
+            required
+          />
+        </div>
+      </div>
 
-          <div className="space-y-2">
-            <label htmlFor="address_line2" className="text-sm font-medium text-green-300">
-              Address Line 2
-            </label>
-            <Input
-              id="address_line2"
-              name="address_line2"
-              value={contactInfo.address_line2}
-              onChange={handleInputChange}
-              placeholder="City, State, Zip"
-              className="bg-black/30 border-green-900/50 text-green-300 placeholder:text-green-700"
-              required
-            />
+      <Card className="mb-6">
+        <CardContent className="pt-6">
+          <h3 className="text-lg font-medium mb-4">Social Media Links</h3>
+          <div className="grid grid-cols-1 gap-4">
+            <div>
+              <Label htmlFor="facebook_url">Facebook URL</Label>
+              <Input
+                id="facebook_url"
+                name="facebook_url"
+                value={contactInfo.facebook_url || ""}
+                onChange={handleChange}
+                placeholder="https://facebook.com/your-page"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="instagram_url">Instagram URL</Label>
+              <Input
+                id="instagram_url"
+                name="instagram_url"
+                value={contactInfo.instagram_url || ""}
+                onChange={handleChange}
+                placeholder="https://instagram.com/your-handle"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="whatsapp_url">WhatsApp URL</Label>
+              <Input
+                id="whatsapp_url"
+                name="whatsapp_url"
+                value={contactInfo.whatsapp_url || ""}
+                onChange={handleChange}
+                placeholder="https://wa.me/your-number"
+              />
+              <p className="text-sm text-green-500 mt-1">
+                Format: https://wa.me/911234567890 (include country code without +)
+              </p>
+            </div>
           </div>
-
-          <div className="space-y-2">
-            <label htmlFor="phone" className="text-sm font-medium text-green-300">
-              Phone Number
-            </label>
-            <Input
-              id="phone"
-              name="phone"
-              value={contactInfo.phone}
-              onChange={handleInputChange}
-              placeholder="Phone number"
-              className="bg-black/30 border-green-900/50 text-green-300 placeholder:text-green-700"
-              required
-            />
-          </div>
-
-          <div className="space-y-2">
-            <label htmlFor="email" className="text-sm font-medium text-green-300">
-              Email Address
-            </label>
-            <Input
-              id="email"
-              name="email"
-              type="email"
-              value={contactInfo.email}
-              onChange={handleInputChange}
-              placeholder="Email address"
-              className="bg-black/30 border-green-900/50 text-green-300 placeholder:text-green-700"
-              required
-            />
-          </div>
-
-          <Button 
-            type="submit" 
-            className="w-full bg-green-900 hover:bg-green-800 text-green-300 border border-green-700"
-            disabled={loading}
-          >
-            {loading ? "Saving..." : "Save Contact Information"}
-          </Button>
-        </form>
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      <Button
+        type="submit"
+        className="w-full bg-green-700 hover:bg-green-800 text-white"
+        disabled={saving}
+      >
+        {saving ? "Saving..." : "Save Contact Information"}
+      </Button>
+    </form>
   );
 };
 

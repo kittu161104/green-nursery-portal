@@ -13,6 +13,8 @@ import Shop from "./pages/Shop";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
 import PlantCareGuides from "./pages/PlantCareGuides";
+import ShippingInfo from "./pages/ShippingInfo";
+import Returns from "./pages/Returns";
 import ProductDetail from "./pages/ProductDetail";
 import Cart from "./pages/Cart";
 import SignIn from "./pages/SignIn";
@@ -41,6 +43,8 @@ const App = () => (
               <Route path="/about" element={<About />} />
               <Route path="/contact" element={<Contact />} />
               <Route path="/plant-care-guides" element={<PlantCareGuides />} />
+              <Route path="/shipping-info" element={<ShippingInfo />} />
+              <Route path="/returns" element={<Returns />} />
               <Route path="/product/:id" element={<ProductDetail />} />
               <Route path="/cart" element={<Cart />} />
               <Route path="/signin" element={<SignIn />} />
