@@ -5,11 +5,13 @@ import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 interface AboutInfo {
+  id?: string;
   title: string;
   content: string;
   mission_statement: string;
   vision: string;
   history: string;
+  updated_at?: string;
 }
 
 const About = () => {
@@ -25,15 +27,16 @@ const About = () => {
   useEffect(() => {
     const fetchAboutInfo = async () => {
       try {
+        setLoading(true);
         const { data, error } = await supabase
           .from('about_info')
           .select('*')
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching about info:", error);
         } else if (data) {
-          setAboutInfo(data);
+          setAboutInfo(data as AboutInfo);
         }
       } catch (error) {
         console.error("Error:", error);
@@ -70,7 +73,7 @@ const About = () => {
             <div className="container mx-auto px-6 py-12 relative z-10">
               <h1 className="text-4xl font-bold text-green-300 text-center mb-8">{aboutInfo.title}</h1>
               
-              <div className="glass-card max-w-3xl mx-auto p-8 rounded-xl shadow-2xl mb-12">
+              <div className="glass-card max-w-3xl mx-auto p-8 rounded-xl shadow-2xl mb-12 bg-black/40 border border-green-900/50 backdrop-blur-md">
                 <p className="text-green-200 text-lg mb-6">{aboutInfo.content}</p>
                 
                 <h2 className="text-2xl font-bold text-green-300 mb-4">Our Mission</h2>
@@ -80,7 +83,7 @@ const About = () => {
                 <p className="text-green-200 mb-6">{aboutInfo.vision}</p>
               </div>
               
-              <div className="glass-card max-w-3xl mx-auto p-8 rounded-xl shadow-2xl">
+              <div className="glass-card max-w-3xl mx-auto p-8 rounded-xl shadow-2xl bg-black/40 border border-green-900/50 backdrop-blur-md">
                 <h2 className="text-2xl font-bold text-green-300 mb-4">Our History</h2>
                 <div className="text-green-200 prose prose-invert"
                   dangerouslySetInnerHTML={{ __html: aboutInfo.history }}
