@@ -22,6 +22,7 @@ const Returns = () => {
     const fetchReturnsInfo = async () => {
       try {
         setLoading(true);
+        // The type error was here - the table was missing in the database
         const { data, error } = await supabase
           .from('returns_info')
           .select('*')

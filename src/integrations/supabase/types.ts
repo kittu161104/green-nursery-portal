@@ -44,25 +44,34 @@ export type Database = {
           address_line1: string
           address_line2: string
           email: string
+          facebook_url: string | null
           id: string
+          instagram_url: string | null
           phone: string
           updated_at: string | null
+          whatsapp_url: string | null
         }
         Insert: {
           address_line1: string
           address_line2: string
           email: string
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           phone: string
           updated_at?: string | null
+          whatsapp_url?: string | null
         }
         Update: {
           address_line1?: string
           address_line2?: string
           email?: string
+          facebook_url?: string | null
           id?: string
+          instagram_url?: string | null
           phone?: string
           updated_at?: string | null
+          whatsapp_url?: string | null
         }
         Relationships: []
       }
@@ -96,6 +105,48 @@ export type Database = {
           plant_name?: string
           task_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      returns_info: {
+        Row: {
+          content: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      shipping_info: {
+        Row: {
+          content: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          content: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          content?: string
+          id?: string
+          title?: string
+          updated_at?: string | null
         }
         Relationships: []
       }
