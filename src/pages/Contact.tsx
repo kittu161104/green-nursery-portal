@@ -11,6 +11,7 @@ interface ContactInfo {
   address_line2: string;
   phone: string;
   email: string;
+  map_image_url?: string;
 }
 
 const Contact = () => {
@@ -18,7 +19,8 @@ const Contact = () => {
     address_line1: "Loading...",
     address_line2: "Loading...",
     phone: "Loading...",
-    email: "Loading..."
+    email: "Loading...",
+    map_image_url: ""
   });
   const [loading, setLoading] = useState(true);
 
@@ -28,7 +30,7 @@ const Contact = () => {
         const { data, error } = await supabase
           .from('contact_info')
           .select('*')
-          .single();
+          .maybeSingle();
 
         if (error) {
           console.error("Error fetching contact info:", error);
@@ -93,8 +95,8 @@ const Contact = () => {
                         <MapPin className="text-green-400 flex-shrink-0 mt-1" size={24} />
                         <div>
                           <h2 className="text-xl font-semibold text-green-300 mb-2">Our Location</h2>
-                          <p className="text-green-200">{contactInfo.address_line1}</p>
-                          <p className="text-green-200">{contactInfo.address_line2}</p>
+                          <p className="text-green-300">{contactInfo.address_line1}</p>
+                          <p className="text-green-300">{contactInfo.address_line2}</p>
                         </div>
                       </div>
                       
@@ -102,7 +104,7 @@ const Contact = () => {
                         <Phone className="text-green-400 flex-shrink-0 mt-1" size={24} />
                         <div>
                           <h2 className="text-xl font-semibold text-green-300 mb-2">Phone</h2>
-                          <p className="text-green-200">{contactInfo.phone}</p>
+                          <p className="text-green-300">{contactInfo.phone}</p>
                         </div>
                       </div>
                       
@@ -110,7 +112,7 @@ const Contact = () => {
                         <Mail className="text-green-400 flex-shrink-0 mt-1" size={24} />
                         <div>
                           <h2 className="text-xl font-semibold text-green-300 mb-2">Email</h2>
-                          <p className="text-green-200">{contactInfo.email}</p>
+                          <p className="text-green-300">{contactInfo.email}</p>
                         </div>
                       </div>
                     </div>
@@ -118,9 +120,17 @@ const Contact = () => {
                   
                   <div className="h-64 md:h-auto">
                     <div className="h-full glass-effect p-2 rounded-xl">
-                      <div className="h-full w-full bg-green-900/20 rounded-lg border border-green-800/30 flex items-center justify-center">
-                        <p className="text-green-400 text-center p-4">Map would be displayed here</p>
-                      </div>
+                      {contactInfo.map_image_url ? (
+                        <img 
+                          src={contactInfo.map_image_url} 
+                          alt="Location Map" 
+                          className="h-full w-full object-cover rounded-lg"
+                        />
+                      ) : (
+                        <div className="h-full w-full bg-green-900/20 rounded-lg border border-green-800/30 flex items-center justify-center">
+                          <p className="text-green-400 text-center p-4">Map would be displayed here</p>
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>

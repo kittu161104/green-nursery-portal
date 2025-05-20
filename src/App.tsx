@@ -24,6 +24,10 @@ import AdminDashboard from "./pages/admin/AdminDashboard";
 import ProductsAdmin from "./pages/admin/ProductsAdmin";
 import AboutAdmin from "./pages/admin/AboutAdmin";
 import ContactAdmin from "./pages/admin/ContactAdmin";
+import OrdersAdmin from "./pages/admin/OrdersAdmin";
+import CustomersAdmin from "./pages/admin/CustomersAdmin";
+import SettingsAdmin from "./pages/admin/SettingsAdmin";
+import PlantCareGuidesAdmin from "./pages/admin/PlantCareGuidesAdmin";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -58,6 +62,10 @@ const App = () => (
               <Route path="/admin/products" element={<ProductsAdmin />} />
               <Route path="/admin/about" element={<AboutAdmin />} />
               <Route path="/admin/contact" element={<ContactAdmin />} />
+              <Route path="/admin/orders" element={<OrdersAdmin />} />
+              <Route path="/admin/customers" element={<CustomersAdmin />} />
+              <Route path="/admin/settings" element={<SettingsAdmin />} />
+              <Route path="/admin/plant-care-guides" element={<PlantCareGuidesAdmin />} />
               
               {/* 404 Route */}
               <Route path="*" element={<NotFound />} />

@@ -23,9 +23,9 @@ const Shop = () => {
   const [filteredProducts, setFilteredProducts] = useState<Product[]>(products);
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All Plants");
-  const [priceRange, setPriceRange] = useState([0, 100]);
+  const [priceRange, setPriceRange] = useState([0, 5000]);
   const [customPriceMin, setCustomPriceMin] = useState("0");
-  const [customPriceMax, setCustomPriceMax] = useState("100");
+  const [customPriceMax, setCustomPriceMax] = useState("5000");
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
   const [filters, setFilters] = useState({
     petFriendly: false,
@@ -137,7 +137,7 @@ const Shop = () => {
         <div className="bg-green-900/20 py-8 border-y border-green-900/30">
           <div className="container mx-auto px-4">
             <h1 className="text-3xl font-bold text-green-300">Shop Our Plants</h1>
-            <p className="mt-2 text-lg text-green-500">
+            <p className="mt-2 text-lg text-green-400">
               Find the perfect plants for your space and lifestyle
             </p>
           </div>
@@ -205,21 +205,21 @@ const Shop = () => {
                 <div className="px-2">
                   <Slider
                     value={priceRange as [number, number]}
-                    max={100}
-                    step={1}
+                    max={5000}
+                    step={100}
                     onValueChange={(value) => setPriceRange(value as [number, number])}
                     className="my-4"
                   />
-                  <div className="flex items-center justify-between text-green-400">
-                    <span>${priceRange[0]}</span>
-                    <span>${priceRange[1]}</span>
+                  <div className="flex items-center justify-between text-green-300">
+                    <span>₹{priceRange[0]}</span>
+                    <span>₹{priceRange[1]}</span>
                   </div>
                   
                   <div className="mt-4 space-y-2">
-                    <p className="text-sm text-green-400">Custom Range:</p>
+                    <p className="text-sm text-green-300">Custom Range:</p>
                     <div className="flex items-center space-x-2">
                       <div className="flex items-center">
-                        <span className="text-green-500 mr-1">$</span>
+                        <span className="text-green-300 mr-1">₹</span>
                         <Input
                           type="number"
                           value={customPriceMin}
@@ -228,9 +228,9 @@ const Shop = () => {
                           min="0"
                         />
                       </div>
-                      <span className="text-green-500">to</span>
+                      <span className="text-green-300">to</span>
                       <div className="flex items-center">
-                        <span className="text-green-500 mr-1">$</span>
+                        <span className="text-green-300 mr-1">₹</span>
                         <Input
                           type="number"
                           value={customPriceMax}
@@ -261,7 +261,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("petFriendly")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="pet-friendly" className="text-green-400">Pet Friendly</Label>
+                    <Label htmlFor="pet-friendly" className="text-green-300">Pet Friendly</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -270,7 +270,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("easyCare")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="easy-care" className="text-green-400">Easy Care</Label>
+                    <Label htmlFor="easy-care" className="text-green-300">Easy Care</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -279,7 +279,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("indoorOnly")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="indoor-only" className="text-green-400">Indoor Only</Label>
+                    <Label htmlFor="indoor-only" className="text-green-300">Indoor Only</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -288,7 +288,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("outdoorOnly")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="outdoor-only" className="text-green-400">Outdoor Only</Label>
+                    <Label htmlFor="outdoor-only" className="text-green-300">Outdoor Only</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -297,7 +297,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("lowLight")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="low-light" className="text-green-400">Low Light Friendly</Label>
+                    <Label htmlFor="low-light" className="text-green-300">Low Light Friendly</Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -306,7 +306,7 @@ const Shop = () => {
                       onCheckedChange={() => handleFilterChange("wateringLow")}
                       className="data-[state=checked]:bg-green-700 data-[state=checked]:border-green-700"
                     />
-                    <Label htmlFor="watering-low" className="text-green-400">Low Watering Needs</Label>
+                    <Label htmlFor="watering-low" className="text-green-300">Low Watering Needs</Label>
                   </div>
                 </div>
               </div>
@@ -315,7 +315,7 @@ const Shop = () => {
             {/* Product Grid */}
             <div className="flex-1">
               <div className="mb-6 flex justify-between items-center">
-                <p className="text-green-400">
+                <p className="text-green-300">
                   Showing {filteredProducts.length} products
                 </p>
                 <div>
@@ -323,7 +323,7 @@ const Shop = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
                 {filteredProducts.length > 0 ? (
                   filteredProducts.map((product) => (
                     <ProductCard key={product.id} product={product} />
@@ -333,7 +333,7 @@ const Shop = () => {
                     <h3 className="text-lg font-medium text-green-300 mb-2">
                       No products found
                     </h3>
-                    <p className="text-green-400">
+                    <p className="text-green-300">
                       Try adjusting your search or filter to find what you're looking for.
                     </p>
                   </div>

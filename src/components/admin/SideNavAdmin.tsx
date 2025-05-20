@@ -9,7 +9,8 @@ import {
   FileText,
   Home,
   Info,
-  Phone
+  Phone,
+  Leaf,
 } from "lucide-react";
 
 const SideNavAdmin = () => {
@@ -31,6 +32,16 @@ const SideNavAdmin = () => {
       icon: <Package className="h-5 w-5" />,
     },
     {
+      label: "Orders",
+      href: "/admin/orders",
+      icon: <FileText className="h-5 w-5" />,
+    },
+    {
+      label: "Customers",
+      href: "/admin/customers",
+      icon: <Users className="h-5 w-5" />,
+    },
+    {
       label: "About",
       href: "/admin/about",
       icon: <Info className="h-5 w-5" />,
@@ -41,14 +52,9 @@ const SideNavAdmin = () => {
       icon: <Phone className="h-5 w-5" />,
     },
     {
-      label: "Orders",
-      href: "/admin/orders",
-      icon: <FileText className="h-5 w-5" />,
-    },
-    {
-      label: "Customers",
-      href: "/admin/customers",
-      icon: <Users className="h-5 w-5" />,
+      label: "Plant Care Guides",
+      href: "/admin/plant-care-guides",
+      icon: <Leaf className="h-5 w-5" />,
     },
     {
       label: "Settings",
@@ -73,7 +79,7 @@ const SideNavAdmin = () => {
                 variant="ghost"
                 className={cn(
                   "w-full justify-start gap-2 text-green-400",
-                  isActiveRoute(item.href) && "bg-green-900/30 text-green-300 font-medium"
+                  isActiveTarget(item.href, location.pathname) && "bg-green-900/30 text-green-300 font-medium"
                 )}
               >
                 {item.icon}
@@ -86,5 +92,19 @@ const SideNavAdmin = () => {
     </div>
   );
 };
+
+// Helper function to check if target is active, supporting both exact and parent route matching
+function isActiveTarget(target: string, current: string): boolean {
+  // Exact match
+  if (target === current) return true;
+  
+  // Special case for dashboard
+  if (target === "/admin" && current === "/admin") return true;
+  
+  // For other routes, check if current path starts with target but is not exactly target = "/admin"
+  if (target !== "/admin" && current.startsWith(target)) return true;
+  
+  return false;
+}
 
 export default SideNavAdmin;

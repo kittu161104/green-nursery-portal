@@ -40,6 +40,22 @@ const ShippingInfo = () => {
     };
 
     fetchShippingInfo();
+    
+    // Set up real-time subscription
+    const channel = supabase
+      .channel('schema_db_changes')
+      .on('postgres_changes', { 
+        event: '*', 
+        schema: 'public', 
+        table: 'shipping_info' 
+      }, payload => {
+        setShippingInfo(payload.new as ShippingInfo);
+      })
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return (
@@ -69,7 +85,7 @@ const ShippingInfo = () => {
               
               <div className="glass-card max-w-3xl mx-auto p-8 rounded-xl shadow-2xl mb-12 bg-black/40 border border-green-900/50 backdrop-blur-md">
                 <div 
-                  className="text-green-200 prose prose-invert max-w-none"
+                  className="text-green-300 prose prose-invert max-w-none"
                   dangerouslySetInnerHTML={{ __html: shippingInfo.content }}
                 ></div>
               </div>

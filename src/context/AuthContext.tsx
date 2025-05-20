@@ -3,7 +3,6 @@ import React, { createContext, useState, useContext, useEffect } from "react";
 import { User } from "../types";
 import { toast } from "@/components/ui/sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Database } from "@/integrations/supabase/types";
 
 interface AuthContextType {
   currentUser: User | null;
@@ -24,29 +23,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (session && session.user) {
-          // Get user data
-          const { data: profile } = await supabase
-            .from('profiles')
-            .select('*')
-            .eq('id', session.user.id)
-            .single();
-          
-          // Get user role
-          const { data: userRole } = await supabase
-            .from('user_roles')
-            .select('role')
-            .eq('user_id', session.user.id)
-            .maybeSingle();
-          
-          const isAdmin = userRole?.role === 'admin';
-          
-          // Set user data
-          setCurrentUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: profile?.full_name || '',
-            isAdmin: isAdmin
-          });
+          try {
+            // Get user profile
+            const { data: profileData, error: profileError } = await supabase
+              .from('profiles')
+              .select('*')
+              .eq('id', session.user.id)
+              .single();
+            
+            if (profileError) {
+              console.error("Error fetching profile:", profileError);
+            }
+            
+            // Get user role
+            const { data: roleData, error: roleError } = await supabase
+              .from('user_roles')
+              .select('role')
+              .eq('user_id', session.user.id)
+              .maybeSingle();
+            
+            if (roleError) {
+              console.error("Error fetching role:", roleError);
+            }
+            
+            const isAdmin = roleData?.role === 'admin';
+            
+            // Set user data
+            setCurrentUser({
+              id: session.user.id,
+              email: session.user.email || '',
+              name: profileData?.full_name || '',
+              isAdmin: isAdmin
+            });
+          } catch (error) {
+            console.error("Error in auth state change:", error);
+            setCurrentUser(null);
+          }
         } else {
           setCurrentUser(null);
         }
@@ -56,33 +68,46 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     // Initial session check
     const checkUser = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session && session.user) {
-        // Get user data
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('*')
-          .eq('id', session.user.id)
-          .single();
-        
-        // Get user role
-        const { data: userRole } = await supabase
-          .from('user_roles')
-          .select('role')
-          .eq('user_id', session.user.id)
-          .maybeSingle();
-        
-        const isAdmin = userRole?.role === 'admin';
-        
-        // Set user data
-        setCurrentUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: profile?.full_name || '',
-          isAdmin: isAdmin
-        });
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session && session.user) {
+          // Get user profile
+          const { data: profileData, error: profileError } = await supabase
+            .from('profiles')
+            .select('*')
+            .eq('id', session.user.id)
+            .single();
+          
+          if (profileError) {
+            console.error("Error fetching profile:", profileError);
+          }
+          
+          // Get user role
+          const { data: roleData, error: roleError } = await supabase
+            .from('user_roles')
+            .select('role')
+            .eq('user_id', session.user.id)
+            .maybeSingle();
+          
+          if (roleError) {
+            console.error("Error fetching role:", roleError);
+          }
+          
+          const isAdmin = roleData?.role === 'admin';
+          
+          // Set user data
+          setCurrentUser({
+            id: session.user.id,
+            email: session.user.email || '',
+            name: profileData?.full_name || '',
+            isAdmin: isAdmin
+          });
+        }
+      } catch (error) {
+        console.error("Error in checking session:", error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
     
     checkUser();
@@ -125,7 +150,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       // Check if email contains '@nature.com' to determine admin status
       const isAdmin = email.endsWith('@nature.com');
       
-      // Sign up with Supabase auth
+      // Sign up with Supabase auth - No email confirmation
       const { data, error } = await supabase.auth.signUp({
         email,
         password,
@@ -133,6 +158,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           data: {
             full_name: name,
           },
+          emailRedirectTo: window.location.origin,
         }
       });
       
@@ -140,17 +166,40 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         throw error;
       }
       
-      // If the user is an admin, add them to the user_roles table
-      if (isAdmin && data.user) {
-        await supabase
-          .from('user_roles')
+      if (data.user) {
+        // Create profile entry manually since the trigger might not work instantly
+        const { error: profileError } = await supabase
+          .from('profiles')
           .insert({
-            user_id: data.user.id,
-            role: 'admin'
-          });
+            id: data.user.id,
+            full_name: name
+          })
+          .select()
+          .single();
+        
+        if (profileError && !profileError.message.includes('duplicate')) {
+          console.error("Error creating profile:", profileError);
+        }
+        
+        // If the user is an admin, add them to the user_roles table
+        if (isAdmin) {
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert({
+              user_id: data.user.id,
+              role: 'admin'
+            });
+          
+          if (roleError && !roleError.message.includes('duplicate')) {
+            console.error("Error setting admin role:", roleError);
+          }
+        }
+        
+        // Auto sign-in after sign-up
+        await signIn(email, password);
       }
       
-      toast.success("Account created successfully! Please check your email for verification.");
+      toast.success("Account created successfully!");
       return Promise.resolve();
     } catch (error: any) {
       console.error("Sign up error:", error);
