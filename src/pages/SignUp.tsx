@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import { Button } from "@/components/ui/button";
@@ -16,36 +16,39 @@ const SignUp = () => {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const { signUp, currentUser } = useAuth();
   const navigate = useNavigate();
 
   // If user is already logged in, redirect to home
-  if (currentUser) {
-    navigate("/");
-    return null;
-  }
+  useEffect(() => {
+    if (currentUser) {
+      navigate("/");
+    }
+  }, [currentUser, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError("");
     
     // Basic validation
     if (!fullName.trim()) {
-      toast.error("Please enter your name");
+      setError("Please enter your name");
       return;
     }
     
     if (!email.trim()) {
-      toast.error("Please enter your email");
+      setError("Please enter your email");
       return;
     }
     
     if (password.length < 6) {
-      toast.error("Password must be at least 6 characters");
+      setError("Password must be at least 6 characters");
       return;
     }
     
     if (password !== confirmPassword) {
-      toast.error("Passwords do not match");
+      setError("Passwords do not match");
       return;
     }
     
@@ -54,14 +57,18 @@ const SignUp = () => {
       await signUp(email, password, fullName);
       
       // Don't navigate immediately, wait for auth state to update
-      setTimeout(() => {
-        navigate("/");
-      }, 500);
-    } catch (error) {
+      // The auth state change will trigger the useEffect hook above
+    } catch (error: any) {
       console.error("Signup error:", error);
+      setError(error.message || "Failed to create account");
+    } finally {
       setLoading(false);
     }
   };
+
+  if (currentUser) {
+    return null; // Prevents flash of content during redirect
+  }
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
@@ -75,6 +82,11 @@ const SignUp = () => {
             </CardDescription>
           </CardHeader>
           <CardContent>
+            {error && (
+              <div className="bg-red-950/20 border border-red-900/50 text-red-300 p-3 rounded-md mb-4">
+                {error}
+              </div>
+            )}
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="name" className="text-green-300">Full Name</Label>

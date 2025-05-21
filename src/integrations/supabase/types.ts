@@ -78,6 +78,36 @@ export type Database = {
         }
         Relationships: []
       }
+      plant_care_guides: {
+        Row: {
+          category: string
+          content: string
+          cover_image: string | null
+          created_at: string
+          id: string
+          title: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string
+          content: string
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          title: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string
+          content?: string
+          cover_image?: string | null
+          created_at?: string
+          id?: string
+          title?: string
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
       plant_care_reminders: {
         Row: {
           completed: boolean

@@ -69,19 +69,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const fetchUserData = async (userId: string) => {
     try {
       // Get user profile
-      const { data: profileData } = await supabase
+      const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
         .eq('id', userId)
         .single();
 
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+      }
+
       // Check if user is admin
-      const { data: roleData } = await supabase
+      const { data: roleData, error: roleError } = await supabase
         .from('user_roles')
-        .select('role')
+        .select('*')
         .eq('user_id', userId)
         .eq('role', 'admin')
         .maybeSingle();
+
+      if (roleError) {
+        console.error("Error fetching user roles:", roleError);
+      }
 
       const isAdmin = !!roleData;
       

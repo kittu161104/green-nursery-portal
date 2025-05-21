@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -60,7 +59,7 @@ const PlantCareGuidesAdmin = () => {
         throw error;
       }
       
-      setGuides(data || []);
+      setGuides(data as PlantCareGuide[] || []);
     } catch (error) {
       console.error("Error fetching plant care guides:", error);
       toast.error("Failed to load plant care guides");
@@ -179,6 +178,7 @@ const PlantCareGuidesAdmin = () => {
         .getPublicUrl(filePath);
         
       setCoverImage(data.publicUrl);
+      toast.success("Image uploaded successfully");
     } catch (error) {
       console.error("Error uploading image:", error);
       toast.error("Failed to upload image");

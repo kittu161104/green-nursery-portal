@@ -76,7 +76,7 @@ const Navbar = () => {
                   align="end"
                 >
                   <DropdownMenuLabel className="text-green-300">
-                    {currentUser.name}
+                    {currentUser.fullName || 'User'}
                   </DropdownMenuLabel>
                   <DropdownMenuLabel className="text-xs text-green-500 font-normal -mt-2">
                     {currentUser.email}
