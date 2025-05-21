@@ -47,6 +47,7 @@ export type Database = {
           facebook_url: string | null
           id: string
           instagram_url: string | null
+          map_image_url: string | null
           phone: string
           updated_at: string | null
           whatsapp_url: string | null
@@ -58,6 +59,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          map_image_url?: string | null
           phone: string
           updated_at?: string | null
           whatsapp_url?: string | null
@@ -69,6 +71,7 @@ export type Database = {
           facebook_url?: string | null
           id?: string
           instagram_url?: string | null
+          map_image_url?: string | null
           phone?: string
           updated_at?: string | null
           whatsapp_url?: string | null
@@ -105,6 +108,24 @@ export type Database = {
           plant_name?: string
           task_type?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      profiles: {
+        Row: {
+          created_at: string
+          full_name: string | null
+          id: string
+        }
+        Insert: {
+          created_at?: string
+          full_name?: string | null
+          id: string
+        }
+        Update: {
+          created_at?: string
+          full_name?: string | null
+          id?: string
         }
         Relationships: []
       }
@@ -147,6 +168,24 @@ export type Database = {
           id?: string
           title?: string
           updated_at?: string | null
+        }
+        Relationships: []
+      }
+      user_roles: {
+        Row: {
+          id: string
+          role: string
+          user_id: string
+        }
+        Insert: {
+          id?: string
+          role: string
+          user_id: string
+        }
+        Update: {
+          id?: string
+          role?: string
+          user_id?: string
         }
         Relationships: []
       }

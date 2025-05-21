@@ -11,12 +11,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Package,
-  TruckDelivery,
   RefreshCw,
   Search,
   PackageCheck,
   PackageX,
   Clock,
+  truck as TruckDelivery
 } from "lucide-react";
 
 // Sample order data

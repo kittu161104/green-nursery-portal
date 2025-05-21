@@ -1,6 +1,7 @@
 
 import React, { useRef } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 
 export interface FileUploadProps {
   onUpload: (file: File) => Promise<void>;
@@ -9,6 +10,8 @@ export interface FileUploadProps {
   className?: string;
   accept?: string;
   maxSizeMB?: number;
+  onUploadComplete?: (url: string) => void;
+  currentImage?: string;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -17,7 +20,9 @@ const FileUpload: React.FC<FileUploadProps> = ({
   loading = false,
   className = "",
   accept = "*",
-  maxSizeMB = 2
+  maxSizeMB = 2,
+  onUploadComplete,
+  currentImage
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -32,14 +37,20 @@ const FileUpload: React.FC<FileUploadProps> = ({
     const fileSizeMB = file.size / (1024 * 1024);
     
     if (maxSizeMB && fileSizeMB > maxSizeMB) {
-      alert(`File size exceeds the maximum limit of ${maxSizeMB}MB.`);
+      toast.error(`File size exceeds the maximum limit of ${maxSizeMB}MB.`);
       return;
     }
     
     try {
       await onUpload(file);
+      if (onUploadComplete) {
+        // This is just a placeholder, the actual URL would be returned from the onUpload function
+        // However we're maintaining the API to match existing code
+        onUploadComplete("");
+      }
     } catch (error) {
       console.error("Error uploading file:", error);
+      toast.error("Failed to upload file. Please try again.");
     } finally {
       // Reset input so the same file can be selected again if needed
       if (fileInputRef.current) {
@@ -65,6 +76,11 @@ const FileUpload: React.FC<FileUploadProps> = ({
       >
         {buttonText}
       </Button>
+      {currentImage && (
+        <div className="mt-2">
+          <img src={currentImage} alt="Current image" className="w-20 h-20 object-cover rounded" />
+        </div>
+      )}
     </div>
   );
 };

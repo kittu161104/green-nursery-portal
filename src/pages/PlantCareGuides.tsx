@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { Button } from "@/components/ui/button";
@@ -14,10 +13,10 @@ interface PlantCareGuide {
   id: string;
   title: string;
   content: string;
-  cover_image: string;
+  cover_image: string | null;
   category: string;
   created_at: string;
-  updated_at: string;
+  updated_at: string | null;
 }
 
 const PlantCareGuides = () => {
@@ -57,7 +56,7 @@ const PlantCareGuides = () => {
         event: '*', 
         schema: 'public', 
         table: 'plant_care_guides' 
-      }, payload => {
+      }, (payload) => {
         if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
           // Add or update the guide in our state
           setGuides(prevGuides => {
@@ -65,11 +64,11 @@ const PlantCareGuides = () => {
             if (existingIndex >= 0) {
               // Update existing guide
               const updatedGuides = [...prevGuides];
-              updatedGuides[existingIndex] = payload.new;
+              updatedGuides[existingIndex] = payload.new as PlantCareGuide;
               return updatedGuides;
             } else {
               // Add new guide
-              return [payload.new, ...prevGuides];
+              return [payload.new as PlantCareGuide, ...prevGuides];
             }
           });
         } else if (payload.eventType === 'DELETE') {
