@@ -12,13 +12,18 @@ interface AuthContextType {
     isAdmin: boolean;
   } | null;
   session: Session | null;
-  signUp: (email: string, password: string, fullName: string) => Promise<void>;
-  signIn: (email: string, password: string) => Promise<void>;
+  signUp: (email: string, password: string, fullName: string, adminCode?: string) => Promise<void>;
+  signIn: (email: string, password: string, adminCode?: string) => Promise<void>;
   signOut: () => Promise<void>;
+  updateAdminCode: (currentAdminCode: string, newAdminCode: string) => Promise<boolean>;
   loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+// Default admin code
+const SYSTEM_ADMIN_CODE = "Natural.green.nursery";
+const DEFAULT_ADMIN_CODE = "Nature@natural";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthContextType["currentUser"]>(null);
@@ -115,7 +120,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signUp = async (email: string, password: string, fullName: string) => {
+  const signUp = async (email: string, password: string, fullName: string, adminCode?: string) => {
     try {
       const { data, error } = await supabase.auth.signUp({ 
         email, 
@@ -135,6 +140,18 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .insert([{ id: data.user.id, full_name: fullName }]);
             
         if (profileError) throw profileError;
+        
+        // Check admin code and set role if valid
+        const isAdmin = await checkAdminCode(adminCode);
+        
+        if (isAdmin) {
+          // Set user as admin
+          const { error: roleError } = await supabase
+            .from('user_roles')
+            .insert([{ user_id: data.user.id, role: 'admin' }]);
+            
+          if (roleError) throw roleError;
+        }
       }
       
       toast.success("Account created successfully!");
@@ -145,10 +162,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const signIn = async (email: string, password: string) => {
+  const signIn = async (email: string, password: string, adminCode?: string) => {
     try {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error, data } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
+      
+      // If admin code provided, validate and update role if needed
+      if (adminCode) {
+        const isAdmin = await checkAdminCode(adminCode);
+        
+        if (isAdmin && data.user) {
+          // Check if user already has admin role
+          const { data: existingRole } = await supabase
+            .from('user_roles')
+            .select('*')
+            .eq('user_id', data.user.id)
+            .eq('role', 'admin')
+            .maybeSingle();
+            
+          // Add admin role if not already present
+          if (!existingRole) {
+            await supabase
+              .from('user_roles')
+              .insert([{ user_id: data.user.id, role: 'admin' }]);
+          }
+        }
+      }
+      
       toast.success("Signed in successfully!");
     } catch (error: any) {
       console.error("Error signing in:", error);
@@ -168,6 +208,75 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       toast.error(error.message || "Failed to sign out");
     }
   };
+  
+  // Validate admin code against stored or default code
+  const checkAdminCode = async (adminCode?: string): Promise<boolean> => {
+    if (!adminCode) return false;
+    
+    // Check if it matches the system admin code
+    if (adminCode === SYSTEM_ADMIN_CODE) return true;
+    
+    try {
+      // Try to get the stored admin code from database
+      const { data, error } = await supabase
+        .from('admin_settings')
+        .select('admin_code')
+        .single();
+      
+      if (error) {
+        // If no admin settings exist yet, use default code
+        return adminCode === DEFAULT_ADMIN_CODE;
+      }
+      
+      return adminCode === data.admin_code;
+    } catch (error) {
+      console.error("Error checking admin code:", error);
+      return adminCode === DEFAULT_ADMIN_CODE;
+    }
+  };
+  
+  // Update admin code (only for admins)
+  const updateAdminCode = async (currentAdminCode: string, newAdminCode: string): Promise<boolean> => {
+    try {
+      // Verify the current admin has permission to update the code
+      const isAdmin = await checkAdminCode(currentAdminCode);
+      
+      if (!isAdmin) {
+        toast.error("Invalid admin code. Cannot update settings.");
+        return false;
+      }
+      
+      // Get existing settings
+      const { data: existingSettings } = await supabase
+        .from('admin_settings')
+        .select('*')
+        .maybeSingle();
+      
+      if (existingSettings) {
+        // Update existing settings
+        const { error } = await supabase
+          .from('admin_settings')
+          .update({ admin_code: newAdminCode })
+          .eq('id', existingSettings.id);
+        
+        if (error) throw error;
+      } else {
+        // Create new settings
+        const { error } = await supabase
+          .from('admin_settings')
+          .insert([{ admin_code: newAdminCode }]);
+        
+        if (error) throw error;
+      }
+      
+      toast.success("Admin code updated successfully");
+      return true;
+    } catch (error: any) {
+      console.error("Error updating admin code:", error);
+      toast.error(error.message || "Failed to update admin code");
+      return false;
+    }
+  };
 
   return (
     <AuthContext.Provider
@@ -177,6 +286,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         signUp,
         signIn,
         signOut,
+        updateAdminCode,
         loading,
       }}
     >

@@ -6,21 +6,29 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Separator } from "@/components/ui/separator";
+import { Checkbox } from "@/components/ui/checkbox";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [adminMode, setAdminMode] = useState(false);
+  const [adminCode, setAdminCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { signIn, currentUser } = useAuth();
   const navigate = useNavigate();
 
-  // If user is already logged in, redirect to home
+  // If user is already logged in, redirect appropriately
   useEffect(() => {
     if (currentUser) {
-      navigate("/");
+      if (currentUser.isAdmin) {
+        navigate("/admin");
+      } else {
+        navigate("/");
+      }
     }
   }, [currentUser, navigate]);
 
@@ -30,7 +38,7 @@ const SignIn = () => {
     setLoading(true);
     
     try {
-      await signIn(email, password);
+      await signIn(email, password, adminMode ? adminCode : undefined);
       // Don't navigate, the auth state changes will trigger useEffect
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
@@ -90,6 +98,33 @@ const SignIn = () => {
                   required
                 />
               </div>
+              
+              <div className="flex items-center space-x-2">
+                <Checkbox 
+                  id="adminMode" 
+                  checked={adminMode} 
+                  onCheckedChange={(checked) => setAdminMode(checked === true)}
+                />
+                <Label htmlFor="adminMode" className="text-green-300">
+                  Sign in as administrator
+                </Label>
+              </div>
+              
+              {adminMode && (
+                <div className="space-y-2 pt-1">
+                  <Label htmlFor="adminCode" className="text-green-300">Admin Code</Label>
+                  <Input
+                    id="adminCode"
+                    type="password"
+                    value={adminCode}
+                    onChange={(e) => setAdminCode(e.target.value)}
+                    placeholder="Enter admin code"
+                    className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800"
+                    required={adminMode}
+                  />
+                </div>
+              )}
+              
               <Button
                 type="submit"
                 className="w-full bg-green-800 hover:bg-green-700 text-white"

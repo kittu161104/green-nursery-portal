@@ -5,15 +5,47 @@ import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
-import { X } from "lucide-react";
+import { 
+  X, 
+  CreditCard, 
+  Wallet, 
+  Phone, 
+  CheckCircle2,
+  Loader2 
+} from "lucide-react";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
+import { Card, CardContent } from "@/components/ui/card";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/context/AuthContext";
 
 const Cart = () => {
   const { cart, updateQuantity, removeFromCart, clearCart, totalItems, totalPrice } = useCart();
   const [isCheckingOut, setIsCheckingOut] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "upi">("cash");
+  const [upiId, setUpiId] = useState("");
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
+  const [paymentStep, setPaymentStep] = useState(1);
+  const [storeUpiId, setStoreUpiId] = useState("");
+  const [orderPlaced, setOrderPlaced] = useState(false);
   const navigate = useNavigate();
+  const { currentUser } = useAuth();
+  
+  // Calculate tax and total
+  const tax = totalPrice * 0.08;
+  const grandTotal = totalPrice + tax;
 
   const handleQuantityChange = (productId: string, quantity: string) => {
     const newQuantity = parseInt(quantity, 10);
@@ -21,17 +53,75 @@ const Cart = () => {
       updateQuantity(productId, newQuantity);
     }
   };
-
-  const handleCheckout = () => {
-    setIsCheckingOut(true);
+  
+  const handleCheckout = async () => {
+    if (!currentUser) {
+      toast.error("Please sign in to checkout");
+      navigate("/signin");
+      return;
+    }
     
-    // In a real app, this would redirect to a checkout page or process the order
-    setTimeout(() => {
-      toast.success("Order placed successfully! Thank you for your purchase.");
-      clearCart();
-      navigate("/");
-      setIsCheckingOut(false);
-    }, 1500);
+    // Fetch store UPI ID from settings
+    try {
+      const { data } = await supabase
+        .from('admin_settings')
+        .select('upi_id')
+        .single();
+      
+      if (data?.upi_id) {
+        setStoreUpiId(data.upi_id);
+      } else {
+        // Default UPI if not set up
+        setStoreUpiId("naturalgreenursery@ybl");
+      }
+    } catch (error) {
+      console.error("Error fetching UPI:", error);
+      setStoreUpiId("naturalgreenursery@ybl");
+    }
+    
+    setShowPaymentDialog(true);
+  };
+  
+  const processPayment = async () => {
+    if (paymentMethod === "upi" && !upiId.trim()) {
+      toast.error("Please enter your UPI ID");
+      return;
+    }
+    
+    setIsCheckingOut(true);
+    setPaymentStep(2);
+    
+    // Simulate payment process
+    setTimeout(async () => {
+      try {
+        // Create order in database (in a real app)
+        // const { error } = await supabase.from('orders').insert({
+        //   user_id: currentUser?.id,
+        //   total_amount: grandTotal,
+        //   payment_method: paymentMethod,
+        //   payment_status: paymentMethod === "cash" ? "pending" : "processing",
+        //   items: cart,
+        // });
+        
+        // if (error) throw error;
+        
+        setPaymentStep(3);
+        setOrderPlaced(true);
+        
+        // Clear cart after successful payment
+        setTimeout(() => {
+          clearCart();
+          setShowPaymentDialog(false);
+          setIsCheckingOut(false);
+          navigate("/");
+          toast.success("Order placed successfully! Thank you for your purchase.");
+        }, 2000);
+      } catch (error) {
+        console.error("Payment error:", error);
+        toast.error("There was a problem processing your order");
+        setIsCheckingOut(false);
+      }
+    }, 2000);
   };
 
   return (
@@ -164,7 +254,7 @@ const Cart = () => {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span>Tax</span>
-                    <span>${(totalPrice * 0.08).toFixed(2)}</span>
+                    <span>${tax.toFixed(2)}</span>
                   </div>
                 </div>
                 
@@ -172,21 +262,20 @@ const Cart = () => {
                 
                 <div className="flex justify-between text-base font-medium text-gray-900">
                   <span>Total</span>
-                  <span>${(totalPrice + (totalPrice * 0.08)).toFixed(2)}</span>
+                  <span>${grandTotal.toFixed(2)}</span>
                 </div>
                 
                 <div className="mt-6">
                   <Button
                     onClick={handleCheckout}
                     className="w-full bg-green-600 hover:bg-green-700"
-                    disabled={isCheckingOut}
                   >
-                    {isCheckingOut ? "Processing..." : "Checkout"}
+                    Checkout
                   </Button>
                 </div>
                 
                 <div className="mt-4 text-sm text-gray-500">
-                  <p>We accept credit cards, PayPal, and ApplePay</p>
+                  <p>We accept UPI payments and Cash on Delivery</p>
                 </div>
               </div>
             </div>
@@ -202,6 +291,103 @@ const Cart = () => {
             </Link>
           </div>
         )}
+        
+        {/* Payment Dialog */}
+        <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Complete Your Purchase</DialogTitle>
+              <DialogDescription>
+                Select your preferred payment method
+              </DialogDescription>
+            </DialogHeader>
+            
+            {!orderPlaced ? (
+              paymentStep === 1 ? (
+                <>
+                  <RadioGroup 
+                    value={paymentMethod} 
+                    onValueChange={(value: "cash" | "upi") => setPaymentMethod(value)}
+                    className="gap-4"
+                  >
+                    <div>
+                      <Card className={`border cursor-pointer ${paymentMethod === "cash" ? "border-green-500" : "border-gray-200"}`}>
+                        <CardContent className="p-4 flex items-center gap-4">
+                          <RadioGroupItem value="cash" id="cash" className="text-green-500" />
+                          <Label htmlFor="cash" className="flex items-center gap-2 cursor-pointer">
+                            <Wallet className="h-5 w-5" />
+                            Cash on Delivery
+                          </Label>
+                        </CardContent>
+                      </Card>
+                    </div>
+                    <div>
+                      <Card className={`border cursor-pointer ${paymentMethod === "upi" ? "border-green-500" : "border-gray-200"}`}>
+                        <CardContent className="p-4">
+                          <div className="flex items-center gap-4 mb-4">
+                            <RadioGroupItem value="upi" id="upi" className="text-green-500" />
+                            <Label htmlFor="upi" className="flex items-center gap-2 cursor-pointer">
+                              <Phone className="h-5 w-5" />
+                              Pay with UPI
+                            </Label>
+                          </div>
+                          {paymentMethod === "upi" && (
+                            <div className="pl-8">
+                              <p className="text-sm mb-2">Send payment to UPI ID:</p>
+                              <p className="font-medium mb-4">{storeUpiId}</p>
+                              <Label htmlFor="upi-id" className="text-sm">Your UPI ID</Label>
+                              <Input
+                                id="upi-id"
+                                value={upiId}
+                                onChange={(e) => setUpiId(e.target.value)}
+                                placeholder="yourname@bank"
+                                className="mt-1"
+                              />
+                              <p className="text-xs text-gray-500 mt-2">
+                                We'll verify your payment using this UPI ID
+                              </p>
+                            </div>
+                          )}
+                        </CardContent>
+                      </Card>
+                    </div>
+                  </RadioGroup>
+                
+                  <DialogFooter>
+                    <Button variant="outline" onClick={() => setShowPaymentDialog(false)}>
+                      Cancel
+                    </Button>
+                    <Button onClick={processPayment}>
+                      {paymentMethod === "cash" ? "Place Order" : "Pay Now"}
+                    </Button>
+                  </DialogFooter>
+                </>
+              ) : (
+                <div className="py-8 flex flex-col items-center justify-center">
+                  <Loader2 className="h-10 w-10 text-green-500 animate-spin mb-4" />
+                  <p className="text-lg font-medium">
+                    {paymentMethod === "cash" ? "Processing your order..." : "Confirming payment..."}
+                  </p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Please don't close this window
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="py-8 flex flex-col items-center justify-center">
+                <CheckCircle2 className="h-12 w-12 text-green-500 mb-4" />
+                <p className="text-lg font-medium">
+                  {paymentMethod === "cash" ? "Order placed successfully!" : "Payment confirmed!"}
+                </p>
+                <p className="text-sm text-gray-500 mt-2 text-center">
+                  {paymentMethod === "cash" 
+                    ? "Your order has been placed. You'll pay when your order is delivered." 
+                    : "Thank you for your payment. Your order has been confirmed."}
+                </p>
+              </div>
+            )}
+          </DialogContent>
+        </Dialog>
       </main>
       <Footer />
     </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -11,9 +10,10 @@ import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
-import { Settings, Globe, CreditCard, Mail, Bell, Shield } from "lucide-react";
+import { Settings, Globe, CreditCard, Mail, Bell, Shield, Lock } from "lucide-react";
+import AdminCodeSettings from "@/components/admin/AdminCodeSettings";
 
 const SettingsAdmin = () => {
   const { currentUser } = useAuth();
@@ -35,9 +35,8 @@ const SettingsAdmin = () => {
   
   // Payment settings
   const [acceptCashOnDelivery, setAcceptCashOnDelivery] = useState(true);
-  const [acceptCreditCards, setAcceptCreditCards] = useState(true);
   const [acceptUPI, setAcceptUPI] = useState(true);
-  const [taxRate, setTaxRate] = useState("18");
+  const [upiId, setUpiId] = useState("");
   
   // Loading states
   const [isLoading, setIsLoading] = useState(false);
@@ -89,7 +88,7 @@ const SettingsAdmin = () => {
           </div>
           
           <Tabs defaultValue="general" className="w-full">
-            <TabsList className="grid grid-cols-3 bg-green-900/20">
+            <TabsList className="grid grid-cols-4 bg-green-900/20">
               <TabsTrigger value="general" className="data-[state=active]:bg-green-800 text-green-300">
                 <Settings className="w-4 h-4 mr-2" /> General
               </TabsTrigger>
@@ -98,6 +97,9 @@ const SettingsAdmin = () => {
               </TabsTrigger>
               <TabsTrigger value="payment" className="data-[state=active]:bg-green-800 text-green-300">
                 <CreditCard className="w-4 h-4 mr-2" /> Payment
+              </TabsTrigger>
+              <TabsTrigger value="admin" className="data-[state=active]:bg-green-800 text-green-300">
+                <Lock className="w-4 h-4 mr-2" /> Admin
               </TabsTrigger>
             </TabsList>
             
@@ -305,7 +307,7 @@ const SettingsAdmin = () => {
               </Card>
             </TabsContent>
             
-            {/* Payment Settings Tab */}
+            {/* Payment Settings Tab - UPDATED FOR UPI & CASH ON DELIVERY ONLY */}
             <TabsContent value="payment">
               <Card className="bg-black/40 border-green-900/30">
                 <CardHeader>
@@ -330,18 +332,6 @@ const SettingsAdmin = () => {
                     
                     <div className="flex items-center justify-between">
                       <div>
-                        <Label htmlFor="credit-cards" className="text-green-300">Credit/Debit Cards</Label>
-                        <p className="text-sm text-green-500">Accept payments via credit or debit cards</p>
-                      </div>
-                      <Switch 
-                        id="credit-cards" 
-                        checked={acceptCreditCards} 
-                        onCheckedChange={setAcceptCreditCards}
-                      />
-                    </div>
-                    
-                    <div className="flex items-center justify-between">
-                      <div>
                         <Label htmlFor="upi" className="text-green-300">UPI Payments</Label>
                         <p className="text-sm text-green-500">Accept UPI payments</p>
                       </div>
@@ -353,19 +343,25 @@ const SettingsAdmin = () => {
                     </div>
                   </div>
                   
-                  <div className="pt-4 border-t border-green-900/30 space-y-2">
-                    <Label htmlFor="tax-rate" className="text-green-300">Tax Rate (%)</Label>
-                    <Input 
-                      id="tax-rate" 
-                      type="number"
-                      value={taxRate} 
-                      onChange={(e) => setTaxRate(e.target.value)}
-                      className="bg-black/40 border-green-900/50 text-green-300 max-w-xs"
-                    />
-                    <p className="text-xs text-green-500">
-                      The default tax rate applied to products in your store.
-                    </p>
-                  </div>
+                  {acceptUPI && (
+                    <div className="pt-4 border-t border-green-900/30">
+                      <h3 className="text-lg font-medium text-green-300 mb-4">UPI Settings</h3>
+                      
+                      <div className="space-y-2">
+                        <Label htmlFor="upi-id" className="text-green-300">Your UPI ID</Label>
+                        <Input 
+                          id="upi-id" 
+                          value={upiId} 
+                          onChange={(e) => setUpiId(e.target.value)}
+                          placeholder="example@ybl"
+                          className="bg-black/40 border-green-900/50 text-green-300"
+                        />
+                        <p className="text-xs text-green-500">
+                          Customers will use this UPI ID to make payments. Make sure it's correct.
+                        </p>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
                 <CardFooter>
                   <Button 
@@ -377,6 +373,11 @@ const SettingsAdmin = () => {
                   </Button>
                 </CardFooter>
               </Card>
+            </TabsContent>
+            
+            {/* Admin Settings Tab - NEW */}
+            <TabsContent value="admin">
+              <AdminCodeSettings />
             </TabsContent>
           </Tabs>
         </div>
