@@ -1,187 +1,202 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import SideNavAdmin from "@/components/admin/SideNavAdmin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ArrowRight, Box, CheckCircle, XCircle, Clock } from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+  Package,
+  TruckDelivery,
+  RefreshCw,
+  Search,
+  PackageCheck,
+  PackageX,
+  Clock,
+} from "lucide-react";
 
-interface Order {
-  id: string;
-  user_id: string;
-  status: "pending" | "processing" | "shipped" | "delivered" | "cancelled" | "returned";
-  total_amount: number;
-  shipping_address: string;
-  shipping_city: string;
-  shipping_state: string;
-  shipping_postal_code: string;
-  shipping_country: string;
-  payment_method: string;
-  payment_status: "pending" | "paid" | "failed" | "refunded";
-  created_at: string;
-  updated_at: string;
-  customer_name?: string;
-  customer_email?: string;
-}
+// Sample order data
+const sampleOrders = [
+  {
+    id: "ord-001",
+    customer: "John Doe",
+    email: "john@example.com",
+    orderDate: "2025-05-15T14:30:00",
+    status: "processing",
+    total: 2499,
+    items: [
+      { name: "Monstera Deliciosa", price: 1299, quantity: 1 },
+      { name: "Terracotta Pot - Medium", price: 599, quantity: 2 }
+    ]
+  },
+  {
+    id: "ord-002",
+    customer: "Jane Smith",
+    email: "jane@example.com",
+    orderDate: "2025-05-14T10:15:00",
+    status: "delivered",
+    total: 3799,
+    items: [
+      { name: "Fiddle Leaf Fig", price: 1999, quantity: 1 },
+      { name: "Premium Potting Soil", price: 899, quantity: 2 }
+    ]
+  },
+  {
+    id: "ord-003",
+    customer: "Robert Johnson",
+    email: "robert@example.com",
+    orderDate: "2025-05-13T16:45:00",
+    status: "returned",
+    returnReason: "Plant arrived damaged",
+    total: 1799,
+    items: [
+      { name: "Snake Plant", price: 899, quantity: 2 }
+    ]
+  },
+  {
+    id: "ord-004",
+    customer: "Maria Garcia",
+    email: "maria@example.com",
+    orderDate: "2025-05-12T09:20:00",
+    status: "delivered",
+    total: 4299,
+    items: [
+      { name: "Bird of Paradise", price: 2499, quantity: 1 },
+      { name: "Ceramic Pot - Large", price: 1800, quantity: 1 }
+    ]
+  },
+  {
+    id: "ord-005",
+    customer: "David Wilson",
+    email: "david@example.com",
+    orderDate: "2025-05-11T11:10:00",
+    status: "processing",
+    total: 3599,
+    items: [
+      { name: "ZZ Plant", price: 1299, quantity: 1 },
+      { name: "Plant Food", price: 499, quantity: 2 },
+      { name: "Hanging Planter", price: 1499, quantity: 1 }
+    ]
+  },
+  {
+    id: "ord-006",
+    customer: "Sarah Brown",
+    email: "sarah@example.com",
+    orderDate: "2025-05-10T15:30:00",
+    status: "refunded",
+    returnReason: "Changed mind",
+    total: 2199,
+    items: [
+      { name: "Pothos", price: 899, quantity: 1 },
+      { name: "Small Planter Set", price: 1300, quantity: 1 }
+    ]
+  }
+];
+
+// Status badge component
+const StatusBadge = ({ status }: { status: string }) => {
+  let color = "";
+  let icon = null;
+  
+  switch (status) {
+    case "processing":
+      color = "bg-blue-500/20 text-blue-300 border-blue-500/30";
+      icon = <Clock className="w-4 h-4 mr-1" />;
+      break;
+    case "delivered":
+      color = "bg-green-500/20 text-green-300 border-green-500/30";
+      icon = <PackageCheck className="w-4 h-4 mr-1" />;
+      break;
+    case "returned":
+      color = "bg-amber-500/20 text-amber-300 border-amber-500/30";
+      icon = <RefreshCw className="w-4 h-4 mr-1" />;
+      break;
+    case "refunded":
+      color = "bg-red-500/20 text-red-300 border-red-500/30";
+      icon = <PackageX className="w-4 h-4 mr-1" />;
+      break;
+    default:
+      color = "bg-gray-500/20 text-gray-300 border-gray-500/30";
+  }
+  
+  return (
+    <Badge className={`${color} flex items-center justify-center gap-1`}>
+      {icon}
+      {status.charAt(0).toUpperCase() + status.slice(1)}
+    </Badge>
+  );
+};
 
 const OrdersAdmin = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filter, setFilter] = useState<string>("all");
+  const [activeTab, setActiveTab] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [statusFilter, setStatusFilter] = useState("all");
+  
   useEffect(() => {
     if (!currentUser || !currentUser.isAdmin) {
       navigate("/signin");
     }
   }, [currentUser, navigate]);
 
-  useEffect(() => {
-    const fetchOrders = async () => {
-      try {
-        setLoading(true);
-        
-        // Fetch orders with customer details
-        const { data, error } = await supabase
-          .from('orders')
-          .select(`
-            *,
-            profiles:user_id (
-              full_name,
-              id
-            )
-          `)
-          .order('created_at', { ascending: false });
-        
-        if (error) {
-          console.error("Error fetching orders:", error);
-          return;
-        }
-        
-        // Format orders with customer info
-        const formattedOrders = await Promise.all(data.map(async (order) => {
-          // Fetch customer email from auth.users via profiles join
-          const { data: userData, error: userError } = await supabase.auth.admin.getUserById(
-            order.profiles?.id
-          );
-          
-          return {
-            ...order,
-            customer_name: order.profiles?.full_name || "Unknown",
-            customer_email: userData?.user?.email || "Unknown"
-          };
-        }));
-        
-        setOrders(formattedOrders);
-      } catch (error) {
-        console.error("Error:", error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Call the fetch function
-    if (currentUser?.isAdmin) {
-      fetchOrders();
-    }
-  }, [currentUser]);
-
-  const getStatusBadge = (status: Order["status"]) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">Pending</Badge>;
-      case "processing":
-        return <Badge variant="outline" className="border-blue-500 text-blue-500">Processing</Badge>;
-      case "shipped":
-        return <Badge variant="outline" className="border-indigo-500 text-indigo-500">Shipped</Badge>;
-      case "delivered":
-        return <Badge variant="outline" className="border-green-500 text-green-500">Delivered</Badge>;
-      case "cancelled":
-        return <Badge variant="outline" className="border-red-500 text-red-500">Cancelled</Badge>;
-      case "returned":
-        return <Badge variant="outline" className="border-orange-500 text-orange-500">Returned</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const getPaymentStatusBadge = (status: Order["payment_status"]) => {
-    switch (status) {
-      case "pending":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-500">Pending</Badge>;
-      case "paid":
-        return <Badge variant="outline" className="border-green-500 text-green-500">Paid</Badge>;
-      case "failed":
-        return <Badge variant="outline" className="border-red-500 text-red-500">Failed</Badge>;
-      case "refunded":
-        return <Badge variant="outline" className="border-purple-500 text-purple-500">Refunded</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
-
-  const updateOrderStatus = async (orderId: string, newStatus: Order["status"]) => {
-    try {
-      const { error } = await supabase
-        .from('orders')
-        .update({ status: newStatus, updated_at: new Date().toISOString() })
-        .eq('id', orderId);
-      
-      if (error) {
-        console.error("Error updating order status:", error);
-        return;
-      }
-      
-      // Update local state
-      setOrders(orders.map(order => 
-        order.id === orderId ? { ...order, status: newStatus } : order
-      ));
-      
-    } catch (error) {
-      console.error("Error:", error);
-    }
-  };
-
-  const filteredOrders = orders.filter(order => {
-    // Filter by status
-    if (filter !== "all" && order.status !== filter) {
+  // Filter orders based on active tab, search term, and status filter
+  const filteredOrders = sampleOrders.filter(order => {
+    // Tab filter
+    if (activeTab !== "all" && order.status !== activeTab) {
       return false;
     }
     
-    // Filter by search term (order ID or customer name/email)
+    // Status filter
+    if (statusFilter !== "all" && order.status !== statusFilter) {
+      return false;
+    }
+    
+    // Search term
     if (searchTerm) {
-      const search = searchTerm.toLowerCase();
+      const searchLower = searchTerm.toLowerCase();
       return (
-        order.id.toLowerCase().includes(search) ||
-        order.customer_name?.toLowerCase().includes(search) ||
-        order.customer_email?.toLowerCase().includes(search) ||
-        order.shipping_city.toLowerCase().includes(search) ||
-        order.shipping_state.toLowerCase().includes(search)
+        order.id.toLowerCase().includes(searchLower) ||
+        order.customer.toLowerCase().includes(searchLower) ||
+        order.email.toLowerCase().includes(searchLower)
       );
     }
     
     return true;
   });
 
-  // Calculate counts for dashboard
-  const pendingCount = orders.filter(order => order.status === "pending").length;
-  const processingCount = orders.filter(order => order.status === "processing").length;
-  const shippedCount = orders.filter(order => order.status === "shipped").length;
-  const deliveredCount = orders.filter(order => order.status === "delivered").length;
-  const cancelledCount = orders.filter(order => order.status === "cancelled").length;
-  const returnedCount = orders.filter(order => order.status === "returned").length;
+  // Order statistics
+  const orderStats = {
+    total: sampleOrders.length,
+    processing: sampleOrders.filter(o => o.status === "processing").length,
+    delivered: sampleOrders.filter(o => o.status === "delivered").length,
+    returned: sampleOrders.filter(o => o.status === "returned").length + 
+              sampleOrders.filter(o => o.status === "refunded").length,
+    revenue: sampleOrders.reduce((sum, order) => 
+      order.status !== "refunded" ? sum + order.total : sum, 0)
+  };
 
   if (!currentUser || !currentUser.isAdmin) {
     return null;
   }
+
+  const formatCurrency = (amount: number) => {
+    return "₹" + (amount / 100).toFixed(2);
+  };
+  
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-IN', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -190,173 +205,182 @@ const OrdersAdmin = () => {
       <div className="flex-1 p-8">
         <div className="flex flex-col gap-8">
           <div>
-            <h1 className="text-3xl font-bold text-green-300">Orders Management</h1>
-            <p className="text-green-400">View and manage customer orders</p>
+            <h1 className="text-3xl font-bold text-green-300">Orders</h1>
+            <p className="text-green-500">Manage customer orders</p>
           </div>
           
-          {/* Order Status Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Card className="bg-black/40 border-green-900/30 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-green-300 text-lg">Pending Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
+          {/* Order Statistics */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-black/40 border-green-900/30">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <Clock className="h-8 w-8 text-yellow-500 mr-2" />
-                    <span className="text-2xl font-bold text-green-300">{pendingCount + processingCount}</span>
+                  <div>
+                    <p className="text-green-500 text-sm">Total Orders</p>
+                    <h3 className="text-green-300 text-2xl font-bold">{orderStats.total}</h3>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    className="border-green-900/50 text-green-300 hover:bg-green-900/20"
-                    onClick={() => setFilter("pending")}
-                  >
-                    View
-                  </Button>
+                  <Package className="text-green-400 h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-black/40 border-green-900/30 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-green-300 text-lg">Delivered Orders</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <Card className="bg-black/40 border-green-900/30">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <CheckCircle className="h-8 w-8 text-green-500 mr-2" />
-                    <span className="text-2xl font-bold text-green-300">{deliveredCount}</span>
+                  <div>
+                    <p className="text-green-500 text-sm">Processing</p>
+                    <h3 className="text-green-300 text-2xl font-bold">{orderStats.processing}</h3>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    className="border-green-900/50 text-green-300 hover:bg-green-900/20"
-                    onClick={() => setFilter("delivered")}
-                  >
-                    View
-                  </Button>
+                  <Clock className="text-blue-400 h-8 w-8" />
                 </div>
               </CardContent>
             </Card>
             
-            <Card className="bg-black/40 border-green-900/30 shadow-md">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-green-300 text-lg">Returned/Cancelled</CardTitle>
-              </CardHeader>
-              <CardContent>
+            <Card className="bg-black/40 border-green-900/30">
+              <CardContent className="p-6">
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <XCircle className="h-8 w-8 text-red-500 mr-2" />
-                    <span className="text-2xl font-bold text-green-300">{cancelledCount + returnedCount}</span>
+                  <div>
+                    <p className="text-green-500 text-sm">Delivered</p>
+                    <h3 className="text-green-300 text-2xl font-bold">{orderStats.delivered}</h3>
                   </div>
-                  <Button 
-                    variant="outline" 
-                    className="border-green-900/50 text-green-300 hover:bg-green-900/20"
-                    onClick={() => setFilter("cancelled")}
-                  >
-                    View
-                  </Button>
+                  <TruckDelivery className="text-green-400 h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-black/40 border-green-900/30">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-500 text-sm">Returns/Refunds</p>
+                    <h3 className="text-green-300 text-2xl font-bold">{orderStats.returned}</h3>
+                  </div>
+                  <RefreshCw className="text-amber-400 h-8 w-8" />
+                </div>
+              </CardContent>
+            </Card>
+            
+            <Card className="bg-black/40 border-green-900/30 col-span-full">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-green-500 text-sm">Total Revenue</p>
+                    <h3 className="text-green-300 text-3xl font-bold">{formatCurrency(orderStats.revenue)}</h3>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
           
-          {/* Orders Table */}
-          <Card className="bg-black/40 border-green-900/30 shadow-md">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <CardTitle className="text-green-300">Order List</CardTitle>
-                <div className="flex flex-col md:flex-row gap-2 md:gap-4">
-                  <Input
-                    placeholder="Search orders..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="bg-black/40 border-green-900/50 text-green-300"
-                  />
-                  <Select value={filter} onValueChange={setFilter}>
-                    <SelectTrigger className="bg-black/40 border-green-900/50 text-green-300 w-[150px]">
-                      <SelectValue placeholder="Filter by status" />
-                    </SelectTrigger>
-                    <SelectContent className="bg-black border-green-900/50 text-green-300">
-                      <SelectItem value="all">All Orders</SelectItem>
-                      <SelectItem value="pending">Pending</SelectItem>
-                      <SelectItem value="processing">Processing</SelectItem>
-                      <SelectItem value="shipped">Shipped</SelectItem>
-                      <SelectItem value="delivered">Delivered</SelectItem>
-                      <SelectItem value="cancelled">Cancelled</SelectItem>
-                      <SelectItem value="returned">Returned</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4 items-center">
+            <div className="relative flex-grow max-w-md">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" size={18} />
+              <Input 
+                placeholder="Search orders by ID or customer..." 
+                className="pl-10 bg-black/40 border-green-900/50 text-green-300 focus:border-green-500"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+              />
+            </div>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px] bg-black/40 border-green-900/50 text-green-300">
+                <SelectValue placeholder="Filter by status" />
+              </SelectTrigger>
+              <SelectContent className="bg-black/80 backdrop-blur-md border-green-900/50">
+                <SelectItem value="all" className="text-green-300">All Statuses</SelectItem>
+                <SelectItem value="processing" className="text-blue-300">Processing</SelectItem>
+                <SelectItem value="delivered" className="text-green-300">Delivered</SelectItem>
+                <SelectItem value="returned" className="text-amber-300">Returned</SelectItem>
+                <SelectItem value="refunded" className="text-red-300">Refunded</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          {/* Orders List */}
+          <Card className="bg-black/40 border-green-900/30">
+            <CardHeader className="pb-2">
+              <Tabs 
+                defaultValue={activeTab} 
+                className="w-full" 
+                onValueChange={setActiveTab}
+              >
+                <TabsList className="grid grid-cols-4 bg-green-900/20">
+                  <TabsTrigger value="all" className="data-[state=active]:bg-green-800 text-green-300">
+                    All Orders
+                  </TabsTrigger>
+                  <TabsTrigger value="processing" className="data-[state=active]:bg-green-800 text-green-300">
+                    Processing
+                  </TabsTrigger>
+                  <TabsTrigger value="delivered" className="data-[state=active]:bg-green-800 text-green-300">
+                    Delivered
+                  </TabsTrigger>
+                  <TabsTrigger value="returned" className="data-[state=active]:bg-green-800 text-green-300">
+                    Returns/Refunds
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
             </CardHeader>
-            <CardContent>
-              {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-green-400">Loading orders...</p>
-                </div>
-              ) : filteredOrders.length === 0 ? (
-                <div className="text-center py-8">
-                  <Box className="mx-auto h-12 w-12 text-green-900/50" />
-                  <h3 className="mt-2 text-lg font-medium text-green-300">No orders found</h3>
-                  <p className="mt-1 text-green-400">
-                    {searchTerm || filter !== "all" 
-                      ? "Try changing your search or filter settings" 
-                      : "You don't have any orders yet"}
-                  </p>
+            
+            <CardContent className="pt-6">
+              {filteredOrders.length > 0 ? (
+                <div className="space-y-4">
+                  {filteredOrders.map((order) => (
+                    <Card key={order.id} className="bg-black/60 border-green-900/20 overflow-hidden">
+                      <div className="p-4">
+                        <div className="flex flex-wrap justify-between items-center gap-4 mb-4">
+                          <div>
+                            <div className="flex items-center gap-2">
+                              <h4 className="text-lg font-medium text-green-300">Order #{order.id}</h4>
+                              <StatusBadge status={order.status} />
+                            </div>
+                            <p className="text-green-500 text-sm">{formatDate(order.orderDate)}</p>
+                          </div>
+                          <div className="text-right">
+                            <p className="text-sm text-green-500">{order.customer}</p>
+                            <p className="text-xs text-green-600">{order.email}</p>
+                          </div>
+                        </div>
+                        
+                        <div className="space-y-2">
+                          {order.items.map((item, idx) => (
+                            <div key={idx} className="flex justify-between text-green-400 text-sm">
+                              <span>{item.name} × {item.quantity}</span>
+                              <span>{formatCurrency(item.price * item.quantity)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        
+                        {order.returnReason && (
+                          <div className="mt-2 text-amber-300 text-sm">
+                            <strong>Return reason:</strong> {order.returnReason}
+                          </div>
+                        )}
+                        
+                        <div className="mt-4 pt-2 border-t border-green-900/30 flex justify-between items-center">
+                          <div className="font-medium text-green-300">
+                            Total: {formatCurrency(order.total)}
+                          </div>
+                          <Button variant="outline" size="sm" className="border-green-800 text-green-400 hover:bg-green-900/20">
+                            View Details
+                          </Button>
+                        </div>
+                      </div>
+                    </Card>
+                  ))}
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="border-b border-green-900/30">
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Order ID</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Customer</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Date</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Amount</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Status</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Payment</th>
-                        <th className="text-left py-3 px-4 text-green-400 font-medium">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredOrders.map((order) => (
-                        <tr key={order.id} className="border-b border-green-900/20 hover:bg-green-900/10">
-                          <td className="py-3 px-4 text-green-300">#{order.id.substring(0, 8)}</td>
-                          <td className="py-3 px-4">
-                            <div className="text-green-300">{order.customer_name}</div>
-                            <div className="text-green-400 text-sm">{order.customer_email}</div>
-                          </td>
-                          <td className="py-3 px-4 text-green-300">
-                            {new Date(order.created_at).toLocaleDateString()}
-                          </td>
-                          <td className="py-3 px-4 text-green-300">₹{order.total_amount.toLocaleString('en-IN')}</td>
-                          <td className="py-3 px-4">{getStatusBadge(order.status)}</td>
-                          <td className="py-3 px-4">{getPaymentStatusBadge(order.payment_status)}</td>
-                          <td className="py-3 px-4">
-                            <Select 
-                              value={order.status} 
-                              onValueChange={(value) => updateOrderStatus(order.id, value as Order["status"])}
-                            >
-                              <SelectTrigger className="bg-black/40 border-green-900/50 text-green-300 w-[140px]">
-                                <SelectValue placeholder="Update Status" />
-                              </SelectTrigger>
-                              <SelectContent className="bg-black border-green-900/50 text-green-300">
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="processing">Processing</SelectItem>
-                                <SelectItem value="shipped">Shipped</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                                <SelectItem value="returned">Returned</SelectItem>
-                              </SelectContent>
-                            </Select>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                <div className="text-center p-8">
+                  <p className="text-green-400">No orders found matching your filters.</p>
                 </div>
               )}
             </CardContent>
+            
+            <CardFooter className="border-t border-green-900/30 pt-4">
+              <div className="w-full text-center text-green-500 text-sm">
+                Showing {filteredOrders.length} of {sampleOrders.length} orders
+              </div>
+            </CardFooter>
           </Card>
         </div>
       </div>

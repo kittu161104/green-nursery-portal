@@ -34,7 +34,7 @@ const SignUp = () => {
       await signUp(name, email, password);
       
       // Redirect based on email domain
-      if (email.endsWith("@nature.com")) {
+      if (email && email.endsWith("@nature.com")) {
         navigate("/admin");
       } else {
         navigate("/account");

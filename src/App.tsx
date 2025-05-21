@@ -7,6 +7,9 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "./context/AuthContext";
 import { CartProvider } from "./context/CartContext";
 
+// Import custom scrollbar override styles
+import "./styles/scrollbar-override.css";
+
 // Pages
 import Index from "./pages/Index";
 import Shop from "./pages/Shop";

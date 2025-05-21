@@ -1,45 +1,47 @@
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
 import SideNavAdmin from "@/components/admin/SideNavAdmin";
+import { Card, CardContent, CardHeader, CardTitle, CardFooter } from "@/components/ui/card";
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { supabase } from "@/integrations/supabase/client";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogTrigger } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { Plus, Pencil, Trash, FileText, Image } from "lucide-react";
+import { Search, Plus, Pencil, Trash2, Leaf } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
 
 interface PlantCareGuide {
   id: string;
   title: string;
   content: string;
-  cover_image: string;
-  category: string;
   created_at: string;
   updated_at: string;
+  plant_type: string;
+  author_id?: string;
+  image_url?: string;
 }
 
 const PlantCareGuidesAdmin = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
+  
   const [guides, setGuides] = useState<PlantCareGuide[]>([]);
   const [loading, setLoading] = useState(true);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-  const [showDialog, setShowDialog] = useState(false);
-  const [editing, setEditing] = useState<PlantCareGuide | null>(null);
-  const [formData, setFormData] = useState({
-    title: "",
-    content: "",
-    cover_image: "",
-    category: "indoor",
-  });
-  const [saving, setSaving] = useState(false);
-
+  
+  const [currentGuide, setCurrentGuide] = useState<PlantCareGuide | null>(null);
+  const [formTitle, setFormTitle] = useState("");
+  const [formContent, setFormContent] = useState("");
+  const [formPlantType, setFormPlantType] = useState("");
+  const [formImageUrl, setFormImageUrl] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  
   useEffect(() => {
     if (!currentUser || !currentUser.isAdmin) {
       navigate("/signin");
@@ -47,149 +49,139 @@ const PlantCareGuidesAdmin = () => {
   }, [currentUser, navigate]);
 
   useEffect(() => {
-    fetchGuides();
-  }, [currentUser]);
-
-  const fetchGuides = async () => {
-    try {
-      setLoading(true);
-      const { data, error } = await supabase
-        .from('plant_care_guides')
-        .select('*')
-        .order('created_at', { ascending: false });
-      
-      if (error) {
-        throw error;
-      }
-      
-      setGuides(data || []);
-    } catch (error) {
-      console.error("Error fetching plant care guides:", error);
-      toast.error("Failed to load plant care guides");
-    } finally {
+    const fetchGuides = async () => {
+      // In a real app, fetch from Supabase
+      setGuides([
+        {
+          id: "1",
+          title: "Monstera Deliciosa Care Guide",
+          plant_type: "Tropical",
+          content: "Monstera plants thrive in bright, indirect light. Water when the top inch of soil is dry. Keep in a humid environment and fertilize monthly during growing season.",
+          created_at: "2025-05-01T10:00:00Z",
+          updated_at: "2025-05-01T10:00:00Z",
+          image_url: "https://images.unsplash.com/photo-1601069925161-6dd5313de5a2?w=800&auto=format&fit=crop&q=60"
+        },
+        {
+          id: "2",
+          title: "Succulents Care Guide",
+          plant_type: "Desert",
+          content: "Succulents need bright light, well-draining soil, and infrequent watering. Let soil dry out completely between waterings. Use cactus soil mix for best results.",
+          created_at: "2025-05-02T10:00:00Z",
+          updated_at: "2025-05-02T10:00:00Z",
+          image_url: "https://images.unsplash.com/photo-1459411552884-841db9b3cc2a?w=800&auto=format&fit=crop&q=60"
+        },
+        {
+          id: "3",
+          title: "Fern Care Guide",
+          plant_type: "Shade",
+          content: "Ferns prefer indirect light and consistent moisture. Keep soil evenly moist and provide high humidity. Avoid direct sunlight which can burn the delicate fronds.",
+          created_at: "2025-05-03T10:00:00Z",
+          updated_at: "2025-05-03T10:00:00Z",
+          image_url: "https://images.unsplash.com/photo-1600411833114-683d8d825a67?w=800&auto=format&fit=crop&q=60"
+        }
+      ]);
       setLoading(false);
-    }
-  };
+    };
 
-  const resetForm = () => {
-    setFormData({
-      title: "",
-      content: "",
-      cover_image: "",
-      category: "indoor",
-    });
-    setEditing(null);
+    fetchGuides();
+  }, []);
+  
+  const handleAddNewGuide = () => {
+    setCurrentGuide(null);
+    setFormTitle("");
+    setFormContent("");
+    setFormPlantType("");
+    setFormImageUrl("");
+    setEditDialogOpen(true);
   };
-
-  const openEditDialog = (guide: PlantCareGuide) => {
-    setEditing(guide);
-    setFormData({
-      title: guide.title,
-      content: guide.content,
-      cover_image: guide.cover_image,
-      category: guide.category,
-    });
-    setShowDialog(true);
+  
+  const handleEditGuide = (guide: PlantCareGuide) => {
+    setCurrentGuide(guide);
+    setFormTitle(guide.title);
+    setFormContent(guide.content);
+    setFormPlantType(guide.plant_type);
+    setFormImageUrl(guide.image_url || "");
+    setEditDialogOpen(true);
   };
-
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    const { name, value } = e.target;
-    setFormData({
-      ...formData,
-      [name]: value,
-    });
+  
+  const handleDeleteGuide = (guide: PlantCareGuide) => {
+    setCurrentGuide(guide);
+    setDeleteDialogOpen(true);
   };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  
+  const confirmDeleteGuide = () => {
+    if (!currentGuide) return;
     
-    if (!formData.title || !formData.content) {
-      toast.error("Title and content are required");
+    // Filter out the deleted guide
+    setGuides(guides.filter(g => g.id !== currentGuide.id));
+    setDeleteDialogOpen(false);
+    toast.success(`"${currentGuide.title}" has been deleted.`);
+  };
+  
+  const handleSubmitGuide = (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    
+    // Validate form
+    if (!formTitle.trim() || !formContent.trim() || !formPlantType.trim()) {
+      toast.error("Please fill in all required fields.");
+      setIsSubmitting(false);
       return;
     }
     
-    try {
-      setSaving(true);
-      
-      if (editing) {
+    setTimeout(() => {
+      if (currentGuide) {
         // Update existing guide
-        const { error } = await supabase
-          .from('plant_care_guides')
-          .update({
-            title: formData.title,
-            content: formData.content,
-            cover_image: formData.cover_image,
-            category: formData.category,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editing.id);
+        const updatedGuide = {
+          ...currentGuide,
+          title: formTitle,
+          content: formContent,
+          plant_type: formPlantType,
+          image_url: formImageUrl,
+          updated_at: new Date().toISOString()
+        };
         
-        if (error) throw error;
-        
-        toast.success("Guide updated successfully");
+        setGuides(guides.map(g => g.id === currentGuide.id ? updatedGuide : g));
+        toast.success(`"${formTitle}" has been updated.`);
       } else {
         // Create new guide
-        const { error } = await supabase
-          .from('plant_care_guides')
-          .insert({
-            title: formData.title,
-            content: formData.content,
-            cover_image: formData.cover_image,
-            category: formData.category,
-          });
+        const newGuide: PlantCareGuide = {
+          id: `temp-${Date.now()}`,
+          title: formTitle,
+          content: formContent,
+          plant_type: formPlantType,
+          image_url: formImageUrl,
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+          author_id: currentUser?.id
+        };
         
-        if (error) throw error;
-        
-        toast.success("Guide created successfully");
+        setGuides([...guides, newGuide]);
+        toast.success(`"${formTitle}" has been created.`);
       }
       
-      // Refresh guide list
-      fetchGuides();
-      setShowDialog(false);
-      resetForm();
-    } catch (error) {
-      console.error("Error saving guide:", error);
-      toast.error("Failed to save guide");
-    } finally {
-      setSaving(false);
-    }
+      setIsSubmitting(false);
+      setEditDialogOpen(false);
+    }, 800);
   };
-
-  const handleDelete = async (id: string) => {
-    if (!confirm("Are you sure you want to delete this guide?")) {
-      return;
-    }
-    
-    try {
-      const { error } = await supabase
-        .from('plant_care_guides')
-        .delete()
-        .eq('id', id);
-      
-      if (error) throw error;
-      
-      setGuides(guides.filter(guide => guide.id !== id));
-      toast.success("Guide deleted successfully");
-    } catch (error) {
-      console.error("Error deleting guide:", error);
-      toast.error("Failed to delete guide");
-    }
-  };
-
-  const filteredGuides = guides.filter(guide => {
-    if (!searchTerm) return true;
-    
-    const search = searchTerm.toLowerCase();
-    return (
-      guide.title.toLowerCase().includes(search) ||
-      guide.category.toLowerCase().includes(search) ||
-      guide.content.toLowerCase().includes(search)
-    );
-  });
+  
+  const filteredGuides = guides.filter(guide => 
+    guide.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    guide.content.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    guide.plant_type.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   if (!currentUser || !currentUser.isAdmin) {
     return null;
   }
+  
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
+    });
+  };
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -197,210 +189,235 @@ const PlantCareGuidesAdmin = () => {
       
       <div className="flex-1 p-8">
         <div className="flex flex-col gap-8">
-          <div className="flex justify-between items-center">
+          <div className="flex flex-wrap justify-between items-center gap-4">
             <div>
               <h1 className="text-3xl font-bold text-green-300">Plant Care Guides</h1>
-              <p className="text-green-400">Manage plant care guides displayed on your website</p>
+              <p className="text-green-500">Manage plant care information for your customers</p>
             </div>
             
-            <Dialog open={showDialog} onOpenChange={setShowDialog}>
-              <DialogTrigger asChild>
-                <Button className="bg-green-800 hover:bg-green-700 text-green-300">
-                  <Plus className="mr-2 h-4 w-4" />
-                  Add New Guide
-                </Button>
-              </DialogTrigger>
-              <DialogContent className="bg-black border-green-900/50 text-green-300 sm:max-w-[600px]">
-                <DialogHeader>
-                  <DialogTitle>{editing ? "Edit Guide" : "Add New Guide"}</DialogTitle>
-                  <DialogDescription className="text-green-400">
-                    {editing 
-                      ? "Update the information for this plant care guide." 
-                      : "Create a new plant care guide to help your customers."}
-                  </DialogDescription>
-                </DialogHeader>
-                
-                <form onSubmit={handleSubmit} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="title" className="text-green-300">Title</Label>
-                    <Input
-                      id="title"
-                      name="title"
-                      value={formData.title}
-                      onChange={handleInputChange}
-                      placeholder="How to Care for Monstera Plants"
-                      className="bg-black/40 border-green-900/50 text-green-300"
-                      required
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="category" className="text-green-300">Category</Label>
-                    <select
-                      id="category"
-                      name="category"
-                      value={formData.category}
-                      onChange={handleInputChange}
-                      className="w-full bg-black/40 border-green-900/50 text-green-300 p-2 rounded-md"
-                    >
-                      <option value="indoor">Indoor Plants</option>
-                      <option value="outdoor">Outdoor Plants</option>
-                      <option value="succulents">Succulents</option>
-                      <option value="watering">Watering Tips</option>
-                      <option value="general">General Care</option>
-                      <option value="seasonal">Seasonal Care</option>
-                    </select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="cover_image" className="text-green-300">Cover Image URL</Label>
-                    <Input
-                      id="cover_image"
-                      name="cover_image"
-                      value={formData.cover_image}
-                      onChange={handleInputChange}
-                      placeholder="https://example.com/image.jpg"
-                      className="bg-black/40 border-green-900/50 text-green-300"
-                    />
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="content" className="text-green-300">Content (HTML supported)</Label>
-                    <Textarea
-                      id="content"
-                      name="content"
-                      value={formData.content}
-                      onChange={handleInputChange}
-                      placeholder="<h3>Watering</h3><p>Water your monstera when the top inch of soil is dry...</p>"
-                      rows={10}
-                      className="bg-black/40 border-green-900/50 text-green-300 font-mono text-sm"
-                      required
-                    />
-                    <p className="text-xs text-green-400">
-                      Use HTML tags for formatting. E.g., &lt;h3&gt;Title&lt;/h3&gt;, &lt;p&gt;Paragraph&lt;/p&gt;, &lt;ul&gt;&lt;li&gt;List item&lt;/li&gt;&lt;/ul&gt;
-                    </p>
-                  </div>
-                  
-                  <DialogFooter>
-                    <Button 
-                      type="button" 
-                      variant="outline" 
-                      onClick={() => {
-                        setShowDialog(false);
-                        resetForm();
-                      }}
-                      className="border-green-900/50 text-green-300 hover:bg-green-900/20"
-                    >
-                      Cancel
-                    </Button>
-                    <Button 
-                      type="submit" 
-                      disabled={saving}
-                      className="bg-green-800 hover:bg-green-700 text-green-300"
-                    >
-                      {saving ? "Saving..." : editing ? "Update Guide" : "Create Guide"}
-                    </Button>
-                  </DialogFooter>
-                </form>
-              </DialogContent>
-            </Dialog>
+            <Button 
+              onClick={handleAddNewGuide} 
+              className="bg-green-800 hover:bg-green-700 text-green-300"
+            >
+              <Plus className="mr-2 h-4 w-4" /> Add New Guide
+            </Button>
           </div>
           
-          <Card className="bg-black/40 border-green-900/30 shadow-md">
-            <CardHeader className="pb-4">
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                <CardTitle className="text-green-300">Published Guides</CardTitle>
-                <Input
-                  placeholder="Search guides..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="max-w-sm bg-black/40 border-green-900/50 text-green-300"
-                />
-              </div>
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-green-500" size={18} />
+            <Input 
+              placeholder="Search guides..." 
+              className="pl-10 bg-black/40 border-green-900/50 text-green-300 focus:border-green-500"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+          
+          <Card className="bg-black/40 border-green-900/30">
+            <CardHeader>
+              <CardTitle className="text-green-300 flex items-center gap-2">
+                <Leaf className="w-5 h-5" />
+                Plant Care Guides
+              </CardTitle>
             </CardHeader>
             <CardContent>
               {loading ? (
-                <div className="text-center py-8">
-                  <p className="text-green-400">Loading guides...</p>
+                <div className="animate-pulse space-y-4">
+                  {[...Array(3)].map((_, i) => (
+                    <div key={i} className="h-16 bg-green-900/20 rounded"></div>
+                  ))}
                 </div>
-              ) : filteredGuides.length === 0 ? (
-                <div className="text-center py-8">
-                  <FileText className="mx-auto h-12 w-12 text-green-900/50" />
-                  <h3 className="mt-2 text-lg font-medium text-green-300">No guides found</h3>
-                  <p className="mt-1 text-green-400">
-                    {searchTerm 
-                      ? "Try adjusting your search term" 
-                      : "Get started by adding your first plant care guide"}
-                  </p>
-                  {!searchTerm && (
-                    <Button 
-                      className="mt-4 bg-green-800 hover:bg-green-700 text-green-300"
-                      onClick={() => setShowDialog(true)}
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      Add New Guide
-                    </Button>
-                  )}
+              ) : filteredGuides.length > 0 ? (
+                <div className="overflow-x-auto">
+                  <Table>
+                    <TableHeader>
+                      <TableRow className="border-green-900/30 hover:bg-green-900/10">
+                        <TableHead className="text-green-400">Title</TableHead>
+                        <TableHead className="text-green-400">Plant Type</TableHead>
+                        <TableHead className="text-green-400">Last Updated</TableHead>
+                        <TableHead className="text-green-400 text-right">Actions</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {filteredGuides.map((guide) => (
+                        <TableRow 
+                          key={guide.id} 
+                          className="border-green-900/30 hover:bg-green-900/10"
+                        >
+                          <TableCell className="text-green-300 font-medium">
+                            <div className="flex items-center gap-2">
+                              {guide.image_url ? (
+                                <img 
+                                  src={guide.image_url} 
+                                  alt={guide.title} 
+                                  className="w-10 h-10 rounded-md object-cover" 
+                                />
+                              ) : (
+                                <div className="w-10 h-10 rounded-md bg-green-900/30 flex items-center justify-center">
+                                  <Leaf className="w-5 h-5 text-green-500" />
+                                </div>
+                              )}
+                              {guide.title}
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-green-300">{guide.plant_type}</TableCell>
+                          <TableCell className="text-green-300">{formatDate(guide.updated_at)}</TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                className="h-8 w-8 p-0 text-green-500 hover:text-green-300 hover:bg-green-900/30"
+                                onClick={() => handleEditGuide(guide)}
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost" 
+                                size="sm"
+                                className="h-8 w-8 p-0 text-red-500 hover:text-red-300 hover:bg-red-900/30"
+                                onClick={() => handleDeleteGuide(guide)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
                 </div>
               ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredGuides.map((guide) => (
-                    <Card key={guide.id} className="bg-black/60 border-green-900/50 shadow-md hover:border-green-700/50 transition-colors">
-                      <div className="h-40 overflow-hidden relative">
-                        {guide.cover_image ? (
-                          <img 
-                            src={guide.cover_image} 
-                            alt={guide.title}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <div className="w-full h-full bg-green-900/20 flex items-center justify-center">
-                            <Image className="h-12 w-12 text-green-900/40" />
-                          </div>
-                        )}
-                        <Badge className="absolute top-2 right-2 bg-green-800/90 hover:bg-green-800">
-                          {guide.category}
-                        </Badge>
-                      </div>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-green-300 text-lg line-clamp-1">{guide.title}</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <p className="text-green-400 text-sm mb-4 line-clamp-2">
-                          {guide.content.replace(/<[^>]*>/g, ' ').substring(0, 120)}...
-                        </p>
-                        <div className="flex justify-between items-center">
-                          <span className="text-xs text-green-500">
-                            {new Date(guide.updated_at || guide.created_at).toLocaleDateString()}
-                          </span>
-                          <div className="flex space-x-2">
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="h-8 border-green-900/50 text-green-300 hover:bg-green-900/20"
-                              onClick={() => openEditDialog(guide)}
-                            >
-                              <Pencil className="h-4 w-4" />
-                            </Button>
-                            <Button 
-                              size="sm" 
-                              variant="outline"
-                              className="h-8 border-red-900/50 text-red-300 hover:bg-red-900/20"
-                              onClick={() => handleDelete(guide.id)}
-                            >
-                              <Trash className="h-4 w-4" />
-                            </Button>
-                          </div>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  ))}
+                <div className="text-center p-8 text-green-400">
+                  No plant care guides found matching your search criteria.
                 </div>
               )}
             </CardContent>
           </Card>
         </div>
       </div>
+      
+      {/* Edit/Add Guide Dialog */}
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent className="max-w-2xl bg-black/90 border-green-900/30">
+          <DialogHeader>
+            <DialogTitle className="text-green-300">
+              {currentGuide ? "Edit Plant Care Guide" : "Add New Plant Care Guide"}
+            </DialogTitle>
+          </DialogHeader>
+          
+          <form onSubmit={handleSubmitGuide} className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="guide-title" className="text-green-300">Title</Label>
+              <Input
+                id="guide-title"
+                value={formTitle}
+                onChange={(e) => setFormTitle(e.target.value)}
+                placeholder="e.g., Monstera Deliciosa Care Guide"
+                className="bg-black/40 border-green-900/50 text-green-300"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="guide-plant-type" className="text-green-300">Plant Type</Label>
+              <Input
+                id="guide-plant-type"
+                value={formPlantType}
+                onChange={(e) => setFormPlantType(e.target.value)}
+                placeholder="e.g., Tropical, Succulent, Herb"
+                className="bg-black/40 border-green-900/50 text-green-300"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="guide-content" className="text-green-300">Care Instructions</Label>
+              <Textarea
+                id="guide-content"
+                value={formContent}
+                onChange={(e) => setFormContent(e.target.value)}
+                placeholder="Provide detailed care instructions for this plant..."
+                className="bg-black/40 border-green-900/50 text-green-300 min-h-[200px]"
+                required
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="guide-image" className="text-green-300">Image URL (optional)</Label>
+              <Input
+                id="guide-image"
+                value={formImageUrl}
+                onChange={(e) => setFormImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="bg-black/40 border-green-900/50 text-green-300"
+              />
+              {formImageUrl && (
+                <div className="mt-2 border border-green-900/30 rounded-md p-2 max-w-xs">
+                  <img 
+                    src={formImageUrl}
+                    alt="Preview"
+                    className="rounded-md w-full h-32 object-cover"
+                    onError={(e) => {
+                      (e.target as HTMLImageElement).src = "https://placehold.co/400x300?text=Invalid+Image+URL";
+                    }}
+                  />
+                </div>
+              )}
+            </div>
+            
+            <DialogFooter>
+              <Button 
+                type="button" 
+                variant="outline" 
+                onClick={() => setEditDialogOpen(false)}
+                className="border-green-900/30 text-green-400"
+                disabled={isSubmitting}
+              >
+                Cancel
+              </Button>
+              <Button 
+                type="submit" 
+                className="bg-green-800 hover:bg-green-700 text-green-300"
+                disabled={isSubmitting}
+              >
+                {isSubmitting ? 'Processing...' : currentGuide ? 'Update Guide' : 'Create Guide'}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <DialogContent className="max-w-md bg-black/90 border-green-900/30">
+          <DialogHeader>
+            <DialogTitle className="text-red-400">Confirm Deletion</DialogTitle>
+          </DialogHeader>
+          
+          <p className="text-green-300">
+            Are you sure you want to delete "{currentGuide?.title}"? This action cannot be undone.
+          </p>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setDeleteDialogOpen(false)}
+              className="border-green-900/30 text-green-400"
+            >
+              Cancel
+            </Button>
+            <Button 
+              type="button" 
+              className="bg-red-800 hover:bg-red-700 text-red-300"
+              onClick={confirmDeleteGuide}
+            >
+              Delete Guide
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

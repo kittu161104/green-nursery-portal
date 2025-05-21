@@ -12,6 +12,7 @@ const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const { signIn } = useAuth();
   const navigate = useNavigate();
 
@@ -20,16 +21,18 @@ const SignIn = () => {
     
     try {
       setIsLoading(true);
+      setError("");
       await signIn(email, password);
       
       // Redirect based on email domain
-      if (email.endsWith("@nature.com")) {
+      if (email && email.endsWith("@nature.com")) {
         navigate("/admin");
       } else {
         navigate("/account");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Sign in error:", error);
+      setError(error.message || "Failed to sign in. Please check your credentials.");
     } finally {
       setIsLoading(false);
     }
@@ -66,6 +69,12 @@ const SignIn = () => {
             </div>
 
             <form className="mt-6 space-y-6" onSubmit={handleSubmit}>
+              {error && (
+                <div className="rounded-md bg-red-900/30 border border-red-800/50 p-4">
+                  <p className="text-sm text-red-300">{error}</p>
+                </div>
+              )}
+              
               <div>
                 <Label htmlFor="email" className="text-green-300">Email address</Label>
                 <Input
