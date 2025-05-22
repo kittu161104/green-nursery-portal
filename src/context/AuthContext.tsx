@@ -1,4 +1,3 @@
-
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -131,7 +130,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       if (error) throw error;
       
-      // Auto-confirm email for now
       if (data.user) {
         // Create profile
         const { error: profileError } = await supabase
@@ -153,10 +151,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
       
-      toast.success("Account created successfully!");
+      toast.success("Account created successfully! You can now sign in.");
     } catch (error: any) {
       console.error("Error signing up:", error);
-      toast.error(error.message || "Failed to create account");
+      
+      // Handle the specific rate limit error
+      if (error.message && error.message.includes("rate limit")) {
+        toast.error("Too many signup attempts. Please try again later.");
+      } else {
+        toast.error(error.message || "Failed to create account");
+      }
       throw error;
     }
   };
@@ -216,11 +220,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (adminCode === SYSTEM_ADMIN_CODE) return true;
     
     try {
-      // Try to get the stored admin code from database
-      // Use custom SQL query since the admin_settings table isn't in the generated TypeScript types yet
+      // Try to get the stored admin code from database using RPC function
       const { data, error } = await supabase
-        .rpc('get_admin_code') // Using a custom RPC function instead of direct table access
-        .maybeSingle();
+        .rpc('get_admin_code');
       
       if (error) {
         console.error("Error checking admin code:", error);
@@ -228,7 +230,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      return adminCode === data?.admin_code;
+      // The RPC function returns a result with admin_code property
+      return adminCode === data;
     } catch (error) {
       console.error("Error checking admin code:", error);
       return false;
@@ -247,7 +250,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       }
       
       // Use RPC function to update admin code
-      const { error } = await supabase
+      const { data, error } = await supabase
         .rpc('update_admin_code', { 
           current_code: currentAdminCode,
           new_code: newAdminCode

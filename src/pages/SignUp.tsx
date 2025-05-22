@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -69,11 +68,17 @@ const SignUp = () => {
     try {
       await signUp(email, password, fullName, adminMode ? adminCode : undefined);
       
-      // Don't navigate immediately, wait for auth state to update
-      // The auth state change will trigger the useEffect hook above
+      // Don't navigate immediately, show a success message and redirect to sign in
+      toast.success("Account created successfully! Please sign in.");
+      navigate('/signin');
     } catch (error: any) {
       console.error("Signup error:", error);
-      setError(error.message || "Failed to create account");
+      
+      if (error.message && error.message.includes("rate limit")) {
+        setError("Too many signup attempts. Please try again later or sign in if you already have an account.");
+      } else {
+        setError(error.message || "Failed to create account");
+      }
     } finally {
       setLoading(false);
     }

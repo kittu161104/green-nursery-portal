@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Product } from '@/types';
 import { Button } from '@/components/ui/button';
@@ -7,9 +6,10 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
-import { toast } from '@/components/ui/sonner';
+import { toast } from 'sonner';
 import { IndianRupee } from 'lucide-react';
 import FileUpload from './FileUpload';
+import { supabase } from '@/integrations/supabase/client';
 
 interface ProductFormProps {
   product?: Product;
@@ -54,11 +54,32 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
     });
   };
 
-  const handleImageUpload = (url: string) => {
-    setFormData({
-      ...formData,
-      imageUrl: url,
-    });
+  const handleImageUpload = async (file: File) => {
+    try {
+      const fileExt = file.name.split('.').pop();
+      const fileName = `${Math.random()}.${fileExt}`;
+      const filePath = `products/${fileName}`;
+      
+      const { error: uploadError } = await supabase.storage
+        .from('plant-images')
+        .upload(filePath, file);
+        
+      if (uploadError) throw uploadError;
+      
+      const { data } = supabase.storage
+        .from('plant-images')
+        .getPublicUrl(filePath);
+        
+      if (data) {
+        setFormData({
+          ...formData,
+          imageUrl: data.publicUrl
+        });
+      }
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      toast.error("Failed to upload image");
+    }
   };
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
@@ -131,7 +152,7 @@ const ProductForm = ({ product, onSubmit }: ProductFormProps) => {
         <div>
           <Label>Product Image</Label>
           <FileUpload 
-            onUploadComplete={handleImageUpload}
+            onUpload={handleImageUpload}
             currentImage={formData.imageUrl}
           />
         </div>

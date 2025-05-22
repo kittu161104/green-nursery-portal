@@ -285,8 +285,8 @@ const PlantCareGuidesAdmin = () => {
                       buttonText="Upload Cover Image"
                       loading={saving}
                       className="bg-green-900 hover:bg-green-800 text-white"
-                      accept="image/*"
-                      maxSizeMB={5}
+                      acceptedFileTypes="image/*"
+                      maxSizeInMB={5}
                       currentImage={coverImage || undefined}
                     />
                   </div>

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +7,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
+import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 
@@ -40,6 +40,7 @@ const SignIn = () => {
     try {
       await signIn(email, password, adminMode ? adminCode : undefined);
       // Don't navigate, the auth state changes will trigger useEffect
+      toast.success("Signed in successfully! Redirecting...");
     } catch (err: any) {
       setError(err.message || "Failed to sign in");
     } finally {

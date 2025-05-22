@@ -4,20 +4,24 @@ import { Button } from '@/components/ui/button';
 
 export interface FileUploadProps {
   onUpload: (file: File) => void | Promise<void>;
+  onUploadComplete?: (url: string) => void;
   buttonText?: string;
   loading?: boolean;
   className?: string;
   acceptedFileTypes?: string;
   maxSizeInMB?: number;
+  currentImage?: string;
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
   onUpload,
+  onUploadComplete,
   buttonText = 'Upload File',
   loading = false,
   className = '',
   acceptedFileTypes = 'image/*',
-  maxSizeInMB = 5
+  maxSizeInMB = 5,
+  currentImage
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
@@ -78,6 +82,15 @@ const FileUpload: React.FC<FileUploadProps> = ({
       >
         {buttonText}
       </Button>
+      {currentImage && (
+        <div className="mt-2">
+          <img 
+            src={currentImage} 
+            alt="Uploaded image" 
+            className="h-24 w-auto object-contain border border-green-500/30 rounded"
+          />
+        </div>
+      )}
       {error && <p className="text-sm text-red-500">{error}</p>}
     </div>
   );
