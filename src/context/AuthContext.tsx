@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useContext, useEffect } from "react";
 import { User, Session } from "@supabase/supabase-js";
 import { supabase } from "@/integrations/supabase/client";
@@ -222,7 +223,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // Try to get the stored admin code from database using RPC function
       const { data, error } = await supabase
-        .rpc('get_admin_code');
+        .rpc('get_admin_code', {});
       
       if (error) {
         console.error("Error checking admin code:", error);

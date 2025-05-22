@@ -11,6 +11,8 @@ export interface FileUploadProps {
   acceptedFileTypes?: string;
   maxSizeInMB?: number;
   currentImage?: string;
+  accept?: string; // Alternative prop name for acceptedFileTypes
+  maxSizeMB?: number; // Alternative prop name for maxSizeInMB
 }
 
 const FileUpload: React.FC<FileUploadProps> = ({
@@ -19,12 +21,18 @@ const FileUpload: React.FC<FileUploadProps> = ({
   buttonText = 'Upload File',
   loading = false,
   className = '',
-  acceptedFileTypes = 'image/*',
+  acceptedFileTypes,
   maxSizeInMB = 5,
-  currentImage
+  currentImage,
+  accept, // Handle alternative prop name
+  maxSizeMB, // Handle alternative prop name
 }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
+  
+  // Use alternative prop names if primary ones aren't provided
+  const fileTypes = acceptedFileTypes || accept || 'image/*';
+  const maxSize = maxSizeInMB || maxSizeMB || 5;
 
   const handleButtonClick = () => {
     if (fileInputRef.current) {
@@ -38,16 +46,16 @@ const FileUpload: React.FC<FileUploadProps> = ({
     
     if (!file) return;
     
-    // Validate file type if acceptedFileTypes is provided
-    if (acceptedFileTypes && !file.type.match(acceptedFileTypes.replace('*', '.*'))) {
-      setError(`Please select a valid file type (${acceptedFileTypes})`);
+    // Validate file type
+    if (fileTypes && !file.type.match(fileTypes.replace('*', '.*'))) {
+      setError(`Please select a valid file type (${fileTypes})`);
       return;
     }
     
     // Validate file size
-    const maxSizeBytes = maxSizeInMB * 1024 * 1024;
+    const maxSizeBytes = maxSize * 1024 * 1024;
     if (file.size > maxSizeBytes) {
-      setError(`File is too large. Maximum size is ${maxSizeInMB}MB`);
+      setError(`File is too large. Maximum size is ${maxSize}MB`);
       return;
     }
     
@@ -69,7 +77,7 @@ const FileUpload: React.FC<FileUploadProps> = ({
       <input
         type="file"
         ref={fileInputRef}
-        accept={acceptedFileTypes}
+        accept={fileTypes}
         onChange={handleFileChange}
         className="hidden"
         disabled={loading}
