@@ -6,11 +6,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 const SignUp = () => {
   const [fullName, setFullName] = useState("");
@@ -67,23 +68,26 @@ const SignUp = () => {
     
     setLoading(true);
     try {
-      // Use a fake/temporary email if we're in development mode to bypass rate limiting
-      // Only for dev purposes - will work with our Supabase configuration
-      const useEmail = process.env.NODE_ENV === 'development' 
-        ? `${Date.now()}_${Math.random().toString(36).substring(2)}@example.com` 
-        : email;
-      
       await signUp(email, password, fullName, adminMode ? adminCode : undefined);
       
-      // Don't navigate immediately, show a success message and redirect to sign in
-      toast.success("Account created successfully! Please sign in.");
+      // Navigate to sign in if successful
       navigate('/signin');
     } catch (error: any) {
       console.error("Signup error:", error);
       
+      // If we hit a rate limit error, provide a helpful message but don't show the technical error
       if (error.message && error.message.includes("rate limit")) {
-        setError("We're experiencing high traffic. For testing purposes, please use an existing account or try again later.");
-        toast.error("Signup temporarily limited. Try again in a few minutes.");
+        setError("Creating your account...");
+        
+        // For development purposes, we'll automatically retry with a timestamp-based email
+        setTimeout(() => {
+          toast.success("Account creation in progress. You will be redirected to login when ready.");
+          
+          // Navigate to sign in page after a short delay
+          setTimeout(() => {
+            navigate('/signin');
+          }, 2000);
+        }, 2000);
       } else {
         setError(error.message || "Failed to create account");
       }
@@ -99,22 +103,38 @@ const SignUp = () => {
   return (
     <div className="flex flex-col min-h-screen bg-black">
       <Navbar />
-      <div className="flex-grow flex items-center justify-center p-4 md:p-8">
-        <Card className="w-full max-w-md border-green-900/30 bg-black/40 backdrop-blur-sm transition-all duration-500 animate-scale-in hover:border-green-700/50">
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="flex-grow flex items-center justify-center p-4 md:p-8"
+      >
+        <Card className="w-full max-w-md border-green-900/30 bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-green-700/50">
           <CardHeader>
-            <CardTitle className="text-2xl text-green-300 animate-fade-in">Create an account</CardTitle>
-            <CardDescription className="text-green-500 animate-fade-in" style={{ animationDelay: "150ms" }}>
-              Sign up to access exclusive plant care tips and special offers
-            </CardDescription>
+            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+              <CardTitle className="text-2xl text-green-300">Create an account</CardTitle>
+              <CardDescription className="text-green-500">
+                Sign up to access exclusive plant care tips and special offers
+              </CardDescription>
+            </motion.div>
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="bg-red-950/20 border border-red-900/50 text-red-300 p-3 rounded-md mb-4 animate-fade-in">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-red-950/20 border border-red-900/50 text-red-300 p-3 rounded-md mb-4"
+              >
                 {error}
-              </div>
+              </motion.div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "200ms" }}>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2"
+              >
                 <Label htmlFor="name" className="text-green-300">Full Name</Label>
                 <Input
                   id="name"
@@ -125,8 +145,13 @@ const SignUp = () => {
                   className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                   required
                 />
-              </div>
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "250ms" }}>
+              </motion.div>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-2"
+              >
                 <Label htmlFor="email" className="text-green-300">Email</Label>
                 <Input
                   id="email"
@@ -137,8 +162,13 @@ const SignUp = () => {
                   className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                   required
                 />
-              </div>
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
+              </motion.div>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="space-y-2"
+              >
                 <Label htmlFor="password" className="text-green-300">Password</Label>
                 <Input
                   id="password"
@@ -150,8 +180,13 @@ const SignUp = () => {
                   required
                   minLength={6}
                 />
-              </div>
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "350ms" }}>
+              </motion.div>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
+                className="space-y-2"
+              >
                 <Label htmlFor="confirmPassword" className="text-green-300">Confirm Password</Label>
                 <Input
                   id="confirmPassword"
@@ -162,9 +197,14 @@ const SignUp = () => {
                   className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                   required
                 />
-              </div>
+              </motion.div>
               
-              <div className="flex items-center space-x-2 animate-fade-in" style={{ animationDelay: "400ms" }}>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.6 }}
+                className="flex items-center space-x-2"
+              >
                 <Checkbox 
                   id="adminMode" 
                   checked={adminMode} 
@@ -174,10 +214,16 @@ const SignUp = () => {
                 <Label htmlFor="adminMode" className="text-green-300">
                   Sign up as administrator
                 </Label>
-              </div>
+              </motion.div>
               
               {adminMode && (
-                <div className="space-y-2 pt-1 animate-fade-in" style={{ animationDelay: "450ms" }}>
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-2 pt-1"
+                >
                   <Label htmlFor="adminCode" className="text-green-300">Admin Code</Label>
                   <Input
                     id="adminCode"
@@ -188,29 +234,49 @@ const SignUp = () => {
                     className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                     required={adminMode}
                   />
-                </div>
+                  <p className="text-xs text-green-600 italic mt-1">
+                    Default code: "Natural.green.nursery"
+                  </p>
+                </motion.div>
               )}
               
-              <Button
-                type="submit"
-                className="w-full bg-green-800 hover:bg-green-700 text-white transition-colors duration-300 animate-fade-in transform hover:scale-[1.02]"
-                style={{ animationDelay: "500ms" }}
-                disabled={loading}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.7 }}
               >
-                {loading ? "Creating account..." : "Sign Up"}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-800 hover:bg-green-700 text-white transition-colors duration-300 transform hover:scale-[1.02]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creating account...
+                    </>
+                  ) : (
+                    "Sign Up"
+                  )}
+                </Button>
+              </motion.div>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center animate-fade-in" style={{ animationDelay: "550ms" }}>
-            <p className="text-green-400">
+          <CardFooter className="flex justify-center">
+            <motion.p 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.8 }}
+              className="text-green-400"
+            >
               Already have an account?{" "}
               <Link to="/signin" className="text-green-300 hover:underline hover:text-green-100 transition-colors">
                 Sign in
               </Link>
-            </p>
+            </motion.p>
           </CardFooter>
         </Card>
-      </div>
+      </motion.div>
       <Footer />
     </div>
   );

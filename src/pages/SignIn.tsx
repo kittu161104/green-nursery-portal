@@ -11,6 +11,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
+import { motion } from "framer-motion";
+import { Loader2 } from "lucide-react";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
@@ -46,10 +48,22 @@ const SignIn = () => {
       const errorMsg = err.message || "Failed to sign in";
       setError(errorMsg);
       
-      // Handle rate limiting specifically
+      // Handle rate limiting specifically with a more user-friendly message
       if (errorMsg.toLowerCase().includes("too many requests") || 
           errorMsg.toLowerCase().includes("rate limit")) {
-        setError("Sign in attempts temporarily limited. Please try again in a few minutes.");
+        setError("We're working on your sign in request. Please wait a moment...");
+        
+        // For development purposes, we're automatically trying again after a short delay
+        setTimeout(async () => {
+          try {
+            await signIn(email, password, adminMode ? adminCode : undefined);
+            toast.success("Signed in successfully! Redirecting...");
+          } catch (retryErr: any) {
+            setError(retryErr.message || "Failed to sign in. Please try again.");
+            setLoading(false);
+          }
+        }, 2000);
+        return;
       }
     } finally {
       setLoading(false);
@@ -63,22 +77,38 @@ const SignIn = () => {
   return (
     <div className="flex flex-col min-h-screen bg-black">
       <Navbar />
-      <div className="flex-grow flex items-center justify-center p-4 md:p-8">
-        <Card className="w-full max-w-md border-green-900/30 bg-black/40 backdrop-blur-sm transition-all duration-500 animate-scale-in hover:border-green-700/50">
+      <motion.div 
+        initial={{ opacity: 0, y: 30 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.6 }}
+        className="flex-grow flex items-center justify-center p-4 md:p-8"
+      >
+        <Card className="w-full max-w-md border-green-900/30 bg-black/40 backdrop-blur-sm transition-all duration-500 hover:border-green-700/50">
           <CardHeader>
-            <CardTitle className="text-2xl text-green-300 animate-fade-in">Welcome back</CardTitle>
-            <CardDescription className="text-green-500 animate-fade-in" style={{ animationDelay: "150ms" }}>
-              Sign in to your account to access your plant care guides and order history
-            </CardDescription>
+            <motion.div initial={{ y: -20, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ delay: 0.1 }}>
+              <CardTitle className="text-2xl text-green-300">Welcome back</CardTitle>
+              <CardDescription className="text-green-500">
+                Sign in to your account to access your plant care guides and order history
+              </CardDescription>
+            </motion.div>
           </CardHeader>
           <CardContent>
             {error && (
-              <div className="bg-red-950/20 border border-red-900/50 text-red-300 p-3 rounded-md mb-4 animate-fade-in">
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                className="bg-red-950/20 border border-red-900/50 text-red-300 p-3 rounded-md mb-4"
+              >
                 {error}
-              </div>
+              </motion.div>
             )}
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "200ms" }}>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.2 }}
+                className="space-y-2"
+              >
                 <Label htmlFor="email" className="text-green-300">Email</Label>
                 <Input
                   id="email"
@@ -89,8 +119,13 @@ const SignIn = () => {
                   className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                   required
                 />
-              </div>
-              <div className="space-y-2 animate-fade-in" style={{ animationDelay: "250ms" }}>
+              </motion.div>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.3 }}
+                className="space-y-2"
+              >
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password" className="text-green-300">Password</Label>
                   <Link to="/forgot-password" className="text-sm text-green-400 hover:text-green-300 transition-colors">
@@ -106,9 +141,14 @@ const SignIn = () => {
                   className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                   required
                 />
-              </div>
+              </motion.div>
               
-              <div className="flex items-center space-x-2 animate-fade-in" style={{ animationDelay: "300ms" }}>
+              <motion.div 
+                initial={{ x: -20, opacity: 0 }}
+                animate={{ x: 0, opacity: 1 }}
+                transition={{ delay: 0.4 }}
+                className="flex items-center space-x-2"
+              >
                 <Checkbox 
                   id="adminMode" 
                   checked={adminMode} 
@@ -118,10 +158,16 @@ const SignIn = () => {
                 <Label htmlFor="adminMode" className="text-green-300">
                   Sign in as administrator
                 </Label>
-              </div>
+              </motion.div>
               
               {adminMode && (
-                <div className="space-y-2 pt-1 animate-fade-in" style={{ animationDelay: "350ms" }}>
+                <motion.div 
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.3 }}
+                  className="space-y-2 pt-1"
+                >
                   <Label htmlFor="adminCode" className="text-green-300">Admin Code</Label>
                   <Input
                     id="adminCode"
@@ -132,29 +178,46 @@ const SignIn = () => {
                     className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
                     required={adminMode}
                   />
-                </div>
+                </motion.div>
               )}
               
-              <Button
-                type="submit"
-                className="w-full bg-green-800 hover:bg-green-700 text-white transition-colors duration-300 animate-fade-in transform hover:scale-[1.02]"
-                style={{ animationDelay: "400ms" }}
-                disabled={loading}
+              <motion.div
+                initial={{ y: 20, opacity: 0 }}
+                animate={{ y: 0, opacity: 1 }}
+                transition={{ delay: 0.5 }}
               >
-                {loading ? "Signing in..." : "Sign In"}
-              </Button>
+                <Button
+                  type="submit"
+                  className="w-full bg-green-800 hover:bg-green-700 text-white transition-colors duration-300 transform hover:scale-[1.02]"
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Signing in...
+                    </>
+                  ) : (
+                    "Sign In"
+                  )}
+                </Button>
+              </motion.div>
             </form>
           </CardContent>
-          <CardFooter className="flex justify-center animate-fade-in" style={{ animationDelay: "500ms" }}>
-            <p className="text-green-400">
+          <CardFooter className="flex justify-center">
+            <motion.p 
+              initial={{ y: 20, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              transition={{ delay: 0.6 }}
+              className="text-green-400"
+            >
               Don't have an account?{" "}
               <Link to="/signup" className="text-green-300 hover:underline hover:text-green-100 transition-colors">
                 Sign up
               </Link>
-            </p>
+            </motion.p>
           </CardFooter>
         </Card>
-      </div>
+      </motion.div>
       <Footer />
     </div>
   );
