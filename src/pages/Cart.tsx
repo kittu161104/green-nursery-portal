@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
@@ -14,7 +14,8 @@ import {
   Wallet, 
   Phone, 
   CheckCircle2,
-  Loader2 
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { 
   Dialog,
@@ -23,7 +24,6 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
@@ -40,12 +40,39 @@ const Cart = () => {
   const [paymentStep, setPaymentStep] = useState(1);
   const [storeUpiId, setStoreUpiId] = useState("");
   const [orderPlaced, setOrderPlaced] = useState(false);
+  const [paymentVerifying, setPaymentVerifying] = useState(false);
+  const [paymentVerified, setPaymentVerified] = useState(false);
+  const [orderId, setOrderId] = useState<string | null>(null);
   const navigate = useNavigate();
   const { currentUser } = useAuth();
   
   // Calculate tax and total
   const tax = totalPrice * 0.08;
   const grandTotal = totalPrice + tax;
+
+  useEffect(() => {
+    // Fetch store UPI ID when component mounts
+    const fetchStoreUpiId = async () => {
+      try {
+        const { data } = await supabase
+          .from('admin_settings')
+          .select('upi_id')
+          .single();
+        
+        if (data?.upi_id) {
+          setStoreUpiId(data.upi_id);
+        } else {
+          // Default UPI if not set up
+          setStoreUpiId("naturalgreenursery@ybl");
+        }
+      } catch (error) {
+        console.error("Error fetching UPI:", error);
+        setStoreUpiId("naturalgreenursery@ybl");
+      }
+    };
+
+    fetchStoreUpiId();
+  }, []);
 
   const handleQuantityChange = (productId: string, quantity: string) => {
     const newQuantity = parseInt(quantity, 10);
@@ -61,24 +88,6 @@ const Cart = () => {
       return;
     }
     
-    // Fetch store UPI ID from settings
-    try {
-      const { data } = await supabase
-        .from('admin_settings')
-        .select('upi_id')
-        .single();
-      
-      if (data?.upi_id) {
-        setStoreUpiId(data.upi_id);
-      } else {
-        // Default UPI if not set up
-        setStoreUpiId("naturalgreenursery@ybl");
-      }
-    } catch (error) {
-      console.error("Error fetching UPI:", error);
-      setStoreUpiId("naturalgreenursery@ybl");
-    }
-    
     setShowPaymentDialog(true);
   };
   
@@ -91,37 +100,88 @@ const Cart = () => {
     setIsCheckingOut(true);
     setPaymentStep(2);
     
-    // Simulate payment process
-    setTimeout(async () => {
-      try {
-        // Create order in database (in a real app)
-        // const { error } = await supabase.from('orders').insert({
-        //   user_id: currentUser?.id,
-        //   total_amount: grandTotal,
-        //   payment_method: paymentMethod,
-        //   payment_status: paymentMethod === "cash" ? "pending" : "processing",
-        //   items: cart,
-        // });
+    try {
+      // Create order in database
+      const { data: orderData, error: orderError } = await supabase.from('orders').insert({
+        user_id: currentUser?.id,
+        total_amount: grandTotal,
+        payment_method: paymentMethod,
+        payment_status: paymentMethod === "cash" ? "pending" : "processing",
+        items: cart,
+        shipping_status: "pending",
+        created_at: new Date().toISOString()
+      }).select();
+      
+      if (orderError) throw orderError;
+      
+      // Set order ID for reference
+      if (orderData && orderData.length > 0) {
+        setOrderId(orderData[0].id);
+      }
+      
+      // If payment method is UPI, simulate payment verification
+      if (paymentMethod === "upi") {
+        setPaymentVerifying(true);
         
-        // if (error) throw error;
-        
+        // Simulate UPI payment verification (in a real app, you would integrate with a UPI provider)
+        setTimeout(() => {
+          setPaymentVerifying(false);
+          setPaymentVerified(true);
+          
+          // Update order status after payment verification
+          supabase.from('orders').update({
+            payment_status: "completed"
+          }).eq('id', orderId);
+          
+          setPaymentStep(3);
+          setOrderPlaced(true);
+          
+          // Clear cart after successful payment
+          setTimeout(() => {
+            clearCart();
+            setShowPaymentDialog(false);
+            setIsCheckingOut(false);
+            navigate("/account?tab=orders");
+            toast.success("Order placed successfully! Thank you for your purchase.");
+          }, 2000);
+        }, 3000);
+      } else {
+        // For cash on delivery, just mark the order as placed
         setPaymentStep(3);
         setOrderPlaced(true);
         
-        // Clear cart after successful payment
+        // Clear cart after successful order placement
         setTimeout(() => {
           clearCart();
           setShowPaymentDialog(false);
           setIsCheckingOut(false);
-          navigate("/");
+          navigate("/account?tab=orders");
           toast.success("Order placed successfully! Thank you for your purchase.");
         }, 2000);
-      } catch (error) {
-        console.error("Payment error:", error);
-        toast.error("There was a problem processing your order");
-        setIsCheckingOut(false);
       }
-    }, 2000);
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast.error("There was a problem processing your order");
+      setIsCheckingOut(false);
+    }
+  };
+
+  // Function to generate deep link for UPI payment apps
+  const generateUpiDeepLink = () => {
+    const amount = grandTotal.toFixed(2);
+    const desc = `Payment for Order at Natural Green Nursery`;
+    
+    // Generate a UPI intent URL that works with most UPI apps
+    return `upi://pay?pa=${storeUpiId}&pn=NaturalGreenNursery&am=${amount}&cu=INR&tn=${desc}`;
+  };
+
+  // Function to open UPI payment app
+  const openUpiPaymentApp = () => {
+    const deepLink = generateUpiDeepLink();
+    window.location.href = deepLink;
+    
+    // Start checking for payment verification (simulated)
+    setPaymentVerifying(true);
   };
 
   return (
@@ -358,19 +418,37 @@ const Cart = () => {
                       Cancel
                     </Button>
                     <Button onClick={processPayment}>
-                      {paymentMethod === "cash" ? "Place Order" : "Pay Now"}
+                      {paymentMethod === "cash" ? "Place Order" : "Continue to Payment"}
                     </Button>
                   </DialogFooter>
                 </>
               ) : (
                 <div className="py-8 flex flex-col items-center justify-center">
-                  <Loader2 className="h-10 w-10 text-green-500 animate-spin mb-4" />
-                  <p className="text-lg font-medium">
-                    {paymentMethod === "cash" ? "Processing your order..." : "Confirming payment..."}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Please don't close this window
-                  </p>
+                  {paymentMethod === "upi" && paymentVerifying ? (
+                    <>
+                      <RefreshCw className="h-10 w-10 text-green-500 animate-spin mb-4" />
+                      <p className="text-lg font-medium">Waiting for payment...</p>
+                      <p className="text-sm text-gray-500 mt-2 text-center">
+                        Please complete the payment in your UPI app
+                      </p>
+                      <Button 
+                        onClick={openUpiPaymentApp} 
+                        className="mt-4 bg-green-600"
+                      >
+                        Open UPI Payment App
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      <Loader2 className="h-10 w-10 text-green-500 animate-spin mb-4" />
+                      <p className="text-lg font-medium">
+                        {paymentMethod === "cash" ? "Processing your order..." : "Confirming payment..."}
+                      </p>
+                      <p className="text-sm text-gray-500 mt-2">
+                        Please don't close this window
+                      </p>
+                    </>
+                  )}
                 </div>
               )
             ) : (
@@ -383,6 +461,9 @@ const Cart = () => {
                   {paymentMethod === "cash" 
                     ? "Your order has been placed. You'll pay when your order is delivered." 
                     : "Thank you for your payment. Your order has been confirmed."}
+                </p>
+                <p className="text-sm font-medium mt-4">
+                  Order ID: {orderId || "Generated"}
                 </p>
               </div>
             )}

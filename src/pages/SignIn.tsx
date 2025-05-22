@@ -12,13 +12,15 @@ import { toast } from "sonner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
 import { motion } from "framer-motion";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 
 const SignIn = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [adminMode, setAdminMode] = useState(false);
   const [adminCode, setAdminCode] = useState("");
+  const [showAdminCode, setShowAdminCode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const { signIn, currentUser } = useAuth();
@@ -47,24 +49,6 @@ const SignIn = () => {
     } catch (err: any) {
       const errorMsg = err.message || "Failed to sign in";
       setError(errorMsg);
-      
-      // Handle rate limiting specifically with a more user-friendly message
-      if (errorMsg.toLowerCase().includes("too many requests") || 
-          errorMsg.toLowerCase().includes("rate limit")) {
-        setError("We're working on your sign in request. Please wait a moment...");
-        
-        // For development purposes, we're automatically trying again after a short delay
-        setTimeout(async () => {
-          try {
-            await signIn(email, password, adminMode ? adminCode : undefined);
-            toast.success("Signed in successfully! Redirecting...");
-          } catch (retryErr: any) {
-            setError(retryErr.message || "Failed to sign in. Please try again.");
-            setLoading(false);
-          }
-        }, 2000);
-        return;
-      }
     } finally {
       setLoading(false);
     }
@@ -73,6 +57,9 @@ const SignIn = () => {
   if (currentUser) {
     return null; // Prevents flash of content during redirect
   }
+
+  const togglePasswordVisibility = () => setShowPassword(!showPassword);
+  const toggleAdminCodeVisibility = () => setShowAdminCode(!showAdminCode);
 
   return (
     <div className="flex flex-col min-h-screen bg-black">
@@ -132,15 +119,24 @@ const SignIn = () => {
                     Forgot password?
                   </Link>
                 </div>
-                <Input
-                  id="password"
-                  type="password"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="Enter your password"
-                  className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
-                  required
-                />
+                <div className="relative">
+                  <Input
+                    id="password"
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="Enter your password"
+                    className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500 pr-10"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={togglePasswordVisibility}
+                    className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-400"
+                  >
+                    {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                  </button>
+                </div>
               </motion.div>
               
               <motion.div 
@@ -169,15 +165,24 @@ const SignIn = () => {
                   className="space-y-2 pt-1"
                 >
                   <Label htmlFor="adminCode" className="text-green-300">Admin Code</Label>
-                  <Input
-                    id="adminCode"
-                    type="password"
-                    value={adminCode}
-                    onChange={(e) => setAdminCode(e.target.value)}
-                    placeholder="Enter admin code"
-                    className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500"
-                    required={adminMode}
-                  />
+                  <div className="relative">
+                    <Input
+                      id="adminCode"
+                      type={showAdminCode ? "text" : "password"}
+                      value={adminCode}
+                      onChange={(e) => setAdminCode(e.target.value)}
+                      placeholder="Enter admin code"
+                      className="bg-black/50 border-green-900/50 text-green-200 placeholder:text-green-800 transition-all focus:border-green-500 pr-10"
+                      required={adminMode}
+                    />
+                    <button
+                      type="button"
+                      onClick={toggleAdminCodeVisibility}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-green-500 hover:text-green-400"
+                    >
+                      {showAdminCode ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
+                    </button>
+                  </div>
                 </motion.div>
               )}
               

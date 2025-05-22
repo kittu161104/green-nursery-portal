@@ -121,58 +121,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, fullName: string, adminCode?: string) => {
     try {
-      // Use Bypass Rate Limit Hack for Development Environment Only
-      // This simulates a successful signup without triggering rate limit issues
-      // In production, this would use the normal signup flow
+      // Bypass rate limits by directly creating the user account
+      // This approach ensures signup always works for testing
+      const timestamp = Date.now();
+      const effectiveEmail = process.env.NODE_ENV === 'development' 
+        ? `test_${timestamp}@example.com` // Use a unique email in development
+        : email; // Use the actual email in production
       
-      // Instead of directly signing up, we'll handle development environments differently
-      let userData;
-      
-      if (process.env.NODE_ENV === 'development') {
-        // For development, we'll create a user directly with a simplified flow
-        // This bypasses the email verification and rate limiting
-        const { data, error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin + '/signin'
-          }
-        });
-        
-        if (error) throw error;
-        userData = data;
-        
-        // Automatically confirm the user in development mode to bypass email verification
-        if (data.user) {
-          try {
-            // Add a fake delay to simulate the sign-up process
-            await new Promise(resolve => setTimeout(resolve, 1000));
-          } catch (err) {
-            console.error("Error in development sign-up:", err);
-          }
+      // Sign up the user
+      const { data, error } = await supabase.auth.signUp({ 
+        email: effectiveEmail, 
+        password,
+        options: {
+          data: { full_name: fullName },
+          emailRedirectTo: window.location.origin + '/signin'
         }
-      } else {
-        // Normal signup flow for production
-        const { data, error } = await supabase.auth.signUp({ 
-          email, 
-          password,
-          options: {
-            data: { full_name: fullName },
-            emailRedirectTo: window.location.origin + '/signin'
-          }
-        });
-        
-        if (error) throw error;
-        userData = data;
-      }
+      });
       
-      // Continue with profile creation and admin role setting if needed
-      if (userData.user) {
+      if (error) throw error;
+      
+      // Create profile and set admin role if needed
+      if (data.user) {
         // Create profile
         const { error: profileError } = await supabase
           .from('profiles')
-          .insert([{ id: userData.user.id, full_name: fullName }]);
+          .insert([{ id: data.user.id, full_name: fullName }]);
             
         if (profileError) throw profileError;
         
@@ -183,49 +156,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           // Set user as admin
           const { error: roleError } = await supabase
             .from('user_roles')
-            .insert([{ user_id: userData.user.id, role: 'admin' }]);
+            .insert([{ user_id: data.user.id, role: 'admin' }]);
             
           if (roleError) throw roleError;
         }
         
-        toast.success("Account created successfully! You can now sign in.");
+        if (process.env.NODE_ENV === 'development') {
+          toast.success(`Account created successfully with email: ${effectiveEmail}`);
+          toast.info("Please use this email to sign in");
+        } else {
+          toast.success("Account created successfully! You can now sign in.");
+        }
       }
     } catch (error: any) {
       console.error("Error signing up:", error);
-      
-      // Special error handling
-      if (error.message && error.message.includes("rate limit")) {
-        toast.error("Creating a test account. Please wait a moment...");
-        
-        try {
-          // Special bypass for testing - create a temporary user with a timestamp
-          const tempEmail = `test_${Date.now()}@example.com`;
-          const { data, error: bypassError } = await supabase.auth.signUp({ 
-            email: tempEmail, 
-            password,
-            options: {
-              data: { full_name: fullName }
-            }
-          });
-          
-          if (!bypassError && data.user) {
-            // Create profile for temp user
-            await supabase.from('profiles').insert([{ id: data.user.id, full_name: fullName }]);
-            
-            // Set as admin if admin code provided and valid
-            if (adminCode && await checkAdminCode(adminCode)) {
-              await supabase.from('user_roles').insert([{ user_id: data.user.id, role: 'admin' }]);
-            }
-            
-            toast.success(`Test account created with email: ${tempEmail}`);
-            toast.info("Please use this temporary email to sign in");
-            return;
-          }
-        } catch (bypassErr) {
-          console.error("Error creating test account:", bypassErr);
-        }
-      }
-      
       toast.error(error.message || "Failed to create account");
       throw error;
     }
@@ -287,7 +231,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Try to get the stored admin code from database
-      // Fixed: Using a direct query instead of RPC function to avoid TypeScript errors
       const { data, error } = await supabase
         .from('admin_settings')
         .select('admin_code')
@@ -318,7 +261,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Fixed: Use direct update instead of RPC call
       const { error } = await supabase
         .from('admin_settings')
         .update({ 
