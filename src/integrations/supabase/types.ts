@@ -39,6 +39,30 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_settings: {
+        Row: {
+          admin_code: string
+          created_at: string | null
+          id: string
+          updated_at: string | null
+          upi_id: string | null
+        }
+        Insert: {
+          admin_code?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          upi_id?: string | null
+        }
+        Update: {
+          admin_code?: string
+          created_at?: string | null
+          id?: string
+          updated_at?: string | null
+          upi_id?: string | null
+        }
+        Relationships: []
+      }
       contact_info: {
         Row: {
           address_line1: string

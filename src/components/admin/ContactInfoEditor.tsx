@@ -5,7 +5,7 @@ import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/componen
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "@/components/ui/sonner";
+import { toast } from "sonner";
 import FileUpload from "./FileUpload";
 
 interface ContactInfo {
@@ -248,12 +248,12 @@ const ContactInfoEditor = () => {
                 </div>
               )}
               <FileUpload
-                accept="image/*"
-                maxSizeMB={5}
                 onUpload={handleMapImageUpload}
                 buttonText={uploadingMap ? "Uploading..." : "Upload Map Image"}
                 loading={uploadingMap}
                 className="bg-green-800 hover:bg-green-700 text-green-300"
+                acceptedFileTypes="image/*"
+                maxSizeInMB={5}
               />
               <p className="text-sm text-green-400">
                 Upload a screenshot or image of your location from Google Maps or similar service.

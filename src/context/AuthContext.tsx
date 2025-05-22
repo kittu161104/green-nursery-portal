@@ -23,7 +23,6 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // Default admin code
 const SYSTEM_ADMIN_CODE = "Natural.green.nursery";
-const DEFAULT_ADMIN_CODE = "Nature@natural";
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<AuthContextType["currentUser"]>(null);
@@ -218,20 +217,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     
     try {
       // Try to get the stored admin code from database
+      // Use custom SQL query since the admin_settings table isn't in the generated TypeScript types yet
       const { data, error } = await supabase
-        .from('admin_settings')
-        .select('admin_code')
-        .single();
+        .rpc('get_admin_code') // Using a custom RPC function instead of direct table access
+        .maybeSingle();
       
       if (error) {
+        console.error("Error checking admin code:", error);
         // If no admin settings exist yet, use default code
-        return adminCode === DEFAULT_ADMIN_CODE;
+        return false;
       }
       
-      return adminCode === data.admin_code;
+      return adminCode === data?.admin_code;
     } catch (error) {
       console.error("Error checking admin code:", error);
-      return adminCode === DEFAULT_ADMIN_CODE;
+      return false;
     }
   };
   
@@ -246,28 +246,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return false;
       }
       
-      // Get existing settings
-      const { data: existingSettings } = await supabase
-        .from('admin_settings')
-        .select('*')
-        .maybeSingle();
+      // Use RPC function to update admin code
+      const { error } = await supabase
+        .rpc('update_admin_code', { 
+          current_code: currentAdminCode,
+          new_code: newAdminCode
+        });
       
-      if (existingSettings) {
-        // Update existing settings
-        const { error } = await supabase
-          .from('admin_settings')
-          .update({ admin_code: newAdminCode })
-          .eq('id', existingSettings.id);
-        
-        if (error) throw error;
-      } else {
-        // Create new settings
-        const { error } = await supabase
-          .from('admin_settings')
-          .insert([{ admin_code: newAdminCode }]);
-        
-        if (error) throw error;
-      }
+      if (error) throw error;
       
       toast.success("Admin code updated successfully");
       return true;
