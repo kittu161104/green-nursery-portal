@@ -102,6 +102,51 @@ export type Database = {
         }
         Relationships: []
       }
+      orders: {
+        Row: {
+          created_at: string
+          id: string
+          items: Json
+          payment_method: string
+          payment_status: string
+          shipping_address: Json | null
+          shipping_status: string
+          total_amount: number
+          transaction_id: string | null
+          updated_at: string | null
+          upi_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          items: Json
+          payment_method: string
+          payment_status: string
+          shipping_address?: Json | null
+          shipping_status: string
+          total_amount: number
+          transaction_id?: string | null
+          updated_at?: string | null
+          upi_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          items?: Json
+          payment_method?: string
+          payment_status?: string
+          shipping_address?: Json | null
+          shipping_status?: string
+          total_amount?: number
+          transaction_id?: string | null
+          updated_at?: string | null
+          upi_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       plant_care_guides: {
         Row: {
           category: string

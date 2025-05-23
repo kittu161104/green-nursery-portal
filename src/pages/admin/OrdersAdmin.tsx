@@ -2,6 +2,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "@/context/AuthContext";
+import { supabase } from "@/integrations/supabase/client"; 
 import SideNavAdmin from "@/components/admin/SideNavAdmin";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from "@/components/ui/table";
@@ -9,67 +10,62 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
-import { Truck } from "lucide-react";
 import { toast } from "sonner";
+import { Order } from "@/types";
 
 const OrdersAdmin = () => {
   const { currentUser } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
+  const [orders, setOrders] = useState<Order[]>([]);
 
   useEffect(() => {
     if (!currentUser || !currentUser.isAdmin) {
       navigate("/signin");
     } else {
-      // Simulate loading data
-      setTimeout(() => {
-        setLoading(false);
-      }, 500);
+      fetchOrders();
     }
   }, [currentUser, navigate]);
 
-  // Mock orders data
-  const mockOrders = [
-    {
-      id: "ORD-001",
-      customer: "John Doe",
-      date: "2023-04-15",
-      status: "delivered",
-      total: "$125.99",
-      items: 3
-    },
-    {
-      id: "ORD-002",
-      customer: "Jane Smith",
-      date: "2023-04-14",
-      status: "shipped",
-      total: "$79.50",
-      items: 2
-    },
-    {
-      id: "ORD-003",
-      customer: "Robert Johnson",
-      date: "2023-04-13",
-      status: "processing",
-      total: "$210.25",
-      items: 5
-    },
-    {
-      id: "ORD-004",
-      customer: "Emily Brown",
-      date: "2023-04-12",
-      status: "pending",
-      total: "$45.00",
-      items: 1
+  const fetchOrders = async () => {
+    try {
+      setLoading(true);
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        throw error;
+      }
+
+      setOrders(data || []);
+      setLoading(false);
+    } catch (error) {
+      console.error("Error fetching orders:", error);
+      toast.error("Failed to load orders");
+      setLoading(false);
     }
-  ];
+  };
 
-  if (!currentUser || !currentUser.isAdmin) {
-    return null;
-  }
+  const handleUpdateStatus = async (orderId: string, status: string) => {
+    try {
+      const { error } = await supabase
+        .from('orders')
+        .update({ 
+          shipping_status: status,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', orderId);
 
-  const handleUpdateStatus = (orderId: string, status: string) => {
-    toast.success(`Order ${orderId} status updated to ${status}`);
+      if (error) throw error;
+      
+      toast.success(`Order ${orderId} status updated to ${status}`);
+      fetchOrders(); // Refresh orders list
+    } catch (error) {
+      console.error("Error updating order status:", error);
+      toast.error("Failed to update order status");
+    }
   };
 
   const getStatusBadge = (status: string) => {
@@ -88,6 +84,10 @@ const OrdersAdmin = () => {
         return <Badge>{status}</Badge>;
     }
   };
+
+  if (!currentUser || !currentUser.isAdmin) {
+    return null;
+  }
 
   return (
     <div className="flex min-h-screen bg-black">
@@ -138,48 +138,60 @@ const OrdersAdmin = () => {
                   <TableHeader>
                     <TableRow className="border-green-900/30">
                       <TableHead className="text-green-400">Order ID</TableHead>
-                      <TableHead className="text-green-400">Customer</TableHead>
                       <TableHead className="text-green-400">Date</TableHead>
                       <TableHead className="text-green-400">Status</TableHead>
                       <TableHead className="text-green-400">Items</TableHead>
                       <TableHead className="text-green-400">Total</TableHead>
+                      <TableHead className="text-green-400">Payment</TableHead>
                       <TableHead className="text-green-400">Actions</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {mockOrders.map((order) => (
-                      <TableRow key={order.id} className="border-green-900/30 hover:bg-green-900/10">
-                        <TableCell className="text-green-300 font-medium">{order.id}</TableCell>
-                        <TableCell className="text-green-300">{order.customer}</TableCell>
-                        <TableCell className="text-green-300">{order.date}</TableCell>
-                        <TableCell>{getStatusBadge(order.status)}</TableCell>
-                        <TableCell className="text-green-300">{order.items}</TableCell>
-                        <TableCell className="text-green-300">{order.total}</TableCell>
-                        <TableCell>
-                          <div className="flex items-center gap-2">
-                            <Select
-                              defaultValue={order.status}
-                              onValueChange={(value) => handleUpdateStatus(order.id, value)}
-                            >
-                              <SelectTrigger className="h-8 w-32 bg-black/40 border-green-900/50 text-green-300">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent className="bg-black/90 border-green-900/50 text-green-300">
-                                <SelectItem value="pending">Pending</SelectItem>
-                                <SelectItem value="processing">Processing</SelectItem>
-                                <SelectItem value="shipped">Shipped</SelectItem>
-                                <SelectItem value="delivered">Delivered</SelectItem>
-                                <SelectItem value="cancelled">Cancelled</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            
-                            <Button variant="outline" size="sm" className="border-green-900/50 text-green-300 hover:bg-green-900/20">
-                              View
-                            </Button>
-                          </div>
+                    {orders.length > 0 ? (
+                      orders.map((order) => (
+                        <TableRow key={order.id} className="border-green-900/30 hover:bg-green-900/10">
+                          <TableCell className="text-green-300 font-medium">{order.id.substring(0, 8)}...</TableCell>
+                          <TableCell className="text-green-300">{new Date(order.created_at).toLocaleDateString()}</TableCell>
+                          <TableCell>{getStatusBadge(order.shipping_status)}</TableCell>
+                          <TableCell className="text-green-300">{(order.items as CartItem[]).length}</TableCell>
+                          <TableCell className="text-green-300">${Number(order.total_amount).toFixed(2)}</TableCell>
+                          <TableCell>
+                            <Badge className={order.payment_status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}>
+                              {order.payment_status}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Select
+                                defaultValue={order.shipping_status}
+                                onValueChange={(value) => handleUpdateStatus(order.id, value)}
+                              >
+                                <SelectTrigger className="h-8 w-32 bg-black/40 border-green-900/50 text-green-300">
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent className="bg-black/90 border-green-900/50 text-green-300">
+                                  <SelectItem value="pending">Pending</SelectItem>
+                                  <SelectItem value="processing">Processing</SelectItem>
+                                  <SelectItem value="shipped">Shipped</SelectItem>
+                                  <SelectItem value="delivered">Delivered</SelectItem>
+                                  <SelectItem value="cancelled">Cancelled</SelectItem>
+                                </SelectContent>
+                              </Select>
+                              
+                              <Button variant="outline" size="sm" className="border-green-900/50 text-green-300 hover:bg-green-900/20">
+                                View
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    ) : (
+                      <TableRow>
+                        <TableCell colSpan={7} className="text-center py-8 text-green-300">
+                          No orders found
                         </TableCell>
                       </TableRow>
-                    ))}
+                    )}
                   </TableBody>
                 </Table>
               )}
