@@ -11,7 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
-import { Order } from "@/types";
+import { Order, CartItem, parseOrderItems } from "@/types";
 
 const OrdersAdmin = () => {
   const { currentUser } = useAuth();
@@ -39,7 +39,13 @@ const OrdersAdmin = () => {
         throw error;
       }
 
-      setOrders(data || []);
+      // Parse the orders and convert JSON items to CartItem[] type
+      const parsedOrders = data?.map(order => ({
+        ...order,
+        items: parseOrderItems(order.items)
+      })) || [];
+      
+      setOrders(parsedOrders);
       setLoading(false);
     } catch (error) {
       console.error("Error fetching orders:", error);
@@ -153,7 +159,7 @@ const OrdersAdmin = () => {
                           <TableCell className="text-green-300 font-medium">{order.id.substring(0, 8)}...</TableCell>
                           <TableCell className="text-green-300">{new Date(order.created_at).toLocaleDateString()}</TableCell>
                           <TableCell>{getStatusBadge(order.shipping_status)}</TableCell>
-                          <TableCell className="text-green-300">{(order.items as CartItem[]).length}</TableCell>
+                          <TableCell className="text-green-300">{parseOrderItems(order.items).length}</TableCell>
                           <TableCell className="text-green-300">${Number(order.total_amount).toFixed(2)}</TableCell>
                           <TableCell>
                             <Badge className={order.payment_status === 'completed' ? 'bg-green-600' : 'bg-yellow-600'}>

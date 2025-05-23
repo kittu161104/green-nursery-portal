@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useCart } from "@/context/CartContext";
@@ -101,16 +100,26 @@ const Cart = () => {
     setPaymentStep(2);
     
     try {
+      // Convert cart items to a format compatible with JSON storage
+      const cartItemsForStorage = cart.map(item => ({
+        productId: item.productId,
+        quantity: item.quantity,
+        product: item.product
+      }));
+
       // Create order in database
-      const { data: orderData, error: orderError } = await supabase.from('orders').insert({
-        user_id: currentUser?.id,
-        total_amount: grandTotal,
-        payment_method: paymentMethod,
-        payment_status: paymentMethod === "cash" ? "pending" : "processing",
-        items: cart,
-        shipping_status: "pending",
-        created_at: new Date().toISOString()
-      }).select();
+      const { data: orderData, error: orderError } = await supabase
+        .from('orders')
+        .insert({
+          user_id: currentUser?.id,
+          total_amount: grandTotal,
+          payment_method: paymentMethod,
+          payment_status: paymentMethod === "cash" ? "pending" : "processing",
+          items: cartItemsForStorage, // Now properly formatted for JSON storage
+          shipping_status: "pending",
+          created_at: new Date().toISOString()
+        })
+        .select();
       
       if (orderError) throw orderError;
       
@@ -159,9 +168,9 @@ const Cart = () => {
           toast.success("Order placed successfully! Thank you for your purchase.");
         }, 2000);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Payment error:", error);
-      toast.error("There was a problem processing your order");
+      toast.error(error.message || "There was a problem processing your order");
       setIsCheckingOut(false);
     }
   };

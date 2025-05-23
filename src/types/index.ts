@@ -31,6 +31,7 @@ export interface Category {
   name: string;
 }
 
+// Updated Order interface to be compatible with Supabase's JSON type
 export interface Order {
   id: string;
   user_id: string;
@@ -38,7 +39,7 @@ export interface Order {
   payment_method: string;
   payment_status: string;
   shipping_status: string;
-  items: CartItem[];
+  items: CartItem[] | any; // Allow for JSON conversion
   created_at: string;
   updated_at?: string;
   shipping_address?: any;
@@ -46,3 +47,22 @@ export interface Order {
   upi_id?: string;
 }
 
+// Type guard to check if an object is a CartItem array
+export function isCartItemArray(items: any): items is CartItem[] {
+  return Array.isArray(items) && items.length > 0 && 'productId' in items[0];
+}
+
+// Helper function to parse JSON items into CartItem[] if needed
+export function parseOrderItems(items: any): CartItem[] {
+  if (isCartItemArray(items)) {
+    return items;
+  }
+  
+  try {
+    const parsed = typeof items === 'string' ? JSON.parse(items) : items;
+    return Array.isArray(parsed) ? parsed : [];
+  } catch (e) {
+    console.error("Failed to parse order items:", e);
+    return [];
+  }
+}
